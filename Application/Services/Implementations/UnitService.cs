@@ -3,7 +3,6 @@ using HajjSystem.Application.DTOs;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Domain.Constants;
 using HajjSystem.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HajjSystem.Application.Services.Implementations;
 
@@ -59,7 +58,7 @@ public class UnitService : IUnitService
                 .OrderBy(u => u.UnitOrder);
         }
 
-        var units = await query.ToListAsync();
+        var units = await _units.ToListAsync(query);
         return await BuildQuotaDtos(units);
     }
 
@@ -68,13 +67,13 @@ public class UnitService : IUnitService
         int year = _settings.ActiveHajjYear;
         var unitIds = units.Select(u => u.UnitId).ToList();
 
-        var counts = await _pilgrims.Query()
+        var counts = await _pilgrims.ToListAsync(_pilgrims.Query()
             .Where(p => p.HajjYear == year &&
                          p.UnitId  != null &&
                          unitIds.Contains(p.UnitId!.Value))
             .GroupBy(p => new { p.UnitId, p.TypeId })
             .Select(g => new { g.Key.UnitId, g.Key.TypeId, Count = g.Count() })
-            .ToListAsync();
+            );
 
         return units.Select(u =>
         {
@@ -93,7 +92,7 @@ public class UnitService : IUnitService
     }
 
     public Task<Unit?> GetByIdAsync(int unitId)   => _units.GetByIdAsync(unitId);
-    public Task<Unit?> GetByCodeAsync(int code)   => _units.Query().Where(u => u.UnitCode == code).FirstOrDefaultAsync();
+    public Task<Unit?> GetByCodeAsync(int code)   => _units.FirstOrDefaultAsync(_units.Query().Where(u => u.UnitCode == code));
     public void Add(Unit unit)    => _units.Add(unit);
     public void Update(Unit unit) => _units.Update(unit);
     public void Delete(Unit unit) => _units.Remove(unit);
