@@ -30,7 +30,7 @@ public class UnitService : IUnitService
 
     public async Task<IEnumerable<UnitQuotaDto>> GetAllQuotasAsync()
     {
-        var units = await _units.Query().OrderBy(u => u.UnitOrder).ToListAsync();
+        var units = await _units.ToListAsync(_units.Query().OrderBy(u => u.UnitOrder));
         return await BuildQuotaDtos(units);
     }
 

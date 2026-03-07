@@ -1,14 +1,10 @@
 using HajjSystem.Application.Common.Interfaces;
+using HajjSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using HajjSystem.Infrastructure.Data;
 
 namespace HajjSystem.Infrastructure.Repositories;
 
-/// <summary>
-/// Generic EF Core repository — no external Core library needed.
-/// All CRUD + IQueryable exposed to the Application layer.
-/// </summary>
 public class Repository<T> : IRepository<T> where T : class
 {
     protected readonly AppDbContext _ctx;
@@ -22,15 +18,14 @@ public class Repository<T> : IRepository<T> where T : class
 
     public IQueryable<T> Query() => _set.AsQueryable();
 
-    public async Task<T?> GetByIdAsync(int id) => await _set.FindAsync(id);
+    public Task<T?>        GetByIdAsync(int id)              => _set.FindAsync(id).AsTask()!;
+    public Task<List<T>>   ToListAsync(IQueryable<T> query)  => query.ToListAsync();
+    public Task<T?>        FirstOrDefaultAsync(IQueryable<T> query) => query.FirstOrDefaultAsync();
+    public Task<bool>      AnyAsync(IQueryable<T> query)     => query.AnyAsync();
+    public Task<int>       CountAsync(IQueryable<T> query)   => query.CountAsync();
 
-    public async Task<IEnumerable<T>> GetAllAsync() => await _set.ToListAsync();
-
-    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
-        => await _set.Where(predicate).ToListAsync();
-
-    public void Add(T entity)    => _set.Add(entity);
-    public void Update(T entity) => _ctx.Entry(entity).State = EntityState.Modified;
-    public void Remove(T entity) => _set.Remove(entity);
+    public void Add(T entity)                        => _set.Add(entity);
+    public void Update(T entity)                     => _ctx.Entry(entity).State = EntityState.Modified;
+    public void Remove(T entity)                     => _set.Remove(entity);
     public void RemoveRange(IEnumerable<T> entities) => _set.RemoveRange(entities);
 }

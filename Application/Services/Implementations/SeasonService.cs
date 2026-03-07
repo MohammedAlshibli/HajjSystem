@@ -81,7 +81,7 @@ public class SeasonService : ISeasonService
         if (pending > 0)
             return Result.Failure<RolloverResultDto>($"يوجد {pending} سجل لم تتم الموافقة النهائية عليه");
 
-        int archived = await _pilgrims.Query().CountAsync(p => p.HajjYear == currentYear);
+        int archived = await _pilgrims.CountAsync(_pilgrims.Query().Where(x => (p => p.HajjYear == currentYear)));
 
         _settings.UpdateActiveYear(newYear);
 
