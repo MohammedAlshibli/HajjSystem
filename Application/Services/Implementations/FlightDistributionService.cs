@@ -60,7 +60,7 @@ public class FlightDistributionService : IFlightDistributionService
         var ret1 = retFlights[0]; var ret2 = retFlights[1];
 
         // Clear existing assignments
-        var existing = await _passengers.Query().Where(p => p.HajjYear == year).ToListAsync();
+        var existing = await _passengers.ToListAsync(_passengers.Query().Where(p => p.HajjYear == year));
         _passengers.RemoveRange(existing);
 
         var pilgrims = await _pilgrims.Query()
@@ -158,7 +158,7 @@ public class FlightDistributionService : IFlightDistributionService
     public async Task<Result<int>> ClearAllAsync()
     {
         int year = _settings.ActiveHajjYear;
-        var all  = await _passengers.Query().Where(p => p.HajjYear == year).ToListAsync();
+        var all  = await _passengers.ToListAsync(_passengers.Query().Where(p => p.HajjYear == year));
         _passengers.RemoveRange(all);
         await _uow.SaveChangesAsync();
         return Result.Success(all.Count);
