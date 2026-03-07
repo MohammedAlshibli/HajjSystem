@@ -4,7 +4,6 @@ using HajjSystem.Application.DTOs;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Domain.Constants;
 using HajjSystem.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HajjSystem.Application.Services.Implementations;
 
@@ -41,19 +40,18 @@ public class PilgrimService : IPilgrimService
             return Result.Failure<Pilgrim>("الوحدة غير موجودة");
 
         // Permanent ban check — has this NIC ever done HQ-approved Hajj?
-        var previousYear = await _pilgrims.Query()
+        var previousYear = await _pilgrims.FirstOrDefaultAsync(_pilgrims.Query()
             .Where(p => p.NIC == pilgrim.NIC &&
                          p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved)
-            .Select(p => p.HajjYear)
-            .FirstOrDefaultAsync();
+            .Select(p => p.HajjYear));
 
         if (previousYear > 0)
             return Result.Failure<Pilgrim>(
                 $"لا يمكن التسجيل — أدّى الفريضة عام {previousYear} ولا يُسمح بالتكرار");
 
         // Duplicate check for current season
-        bool duplicate = await _pilgrims.Query()
-            .AnyAsync(p => p.NIC == pilgrim.NIC && p.HajjYear == year);
+        bool duplicate = await _pilgrims.AnyAsync(_pilgrims.Query()
+            .Where(p => p.NIC == pilgrim.NIC && p.HajjYear == year));
         if (duplicate)
             return Result.Failure<Pilgrim>("الموظف مسجل مسبقاً في هذه الدورة");
 
@@ -61,10 +59,10 @@ public class PilgrimService : IPilgrimService
         try
         {
             // Count inside transaction → race-condition safe
-            int consumed = await _pilgrims.Query()
-                .CountAsync(p => p.UnitId     == pilgrim.UnitId &&
-                                  p.TypeId     == pilgrim.TypeId &&
-                                  p.HajjYear   == year);
+            int consumed = await _pilgrims.CountAsync(_pilgrims.Query()
+                .Where(p => p.UnitId     == pilgrim.UnitId &&
+                             p.TypeId     == pilgrim.TypeId &&
+                             p.HajjYear   == year));
 
             int allowed = pilgrim.TypeId == HajjConstants.PilgrimType.Regular
                 ? unit.AllowNumber
@@ -95,19 +93,17 @@ public class PilgrimService : IPilgrimService
 
     public async Task<BanCheckDto> CheckPermanentBanAsync(string nic)
     {
-        var banned = await _pilgrims.Query()
+        var banned = await _pilgrims.FirstOrDefaultAsync(_pilgrims.Query()
             .Where(p => p.NIC == nic &&
                          p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved)
-            .Select(p => new { p.HajjYear, p.UnitId })
-            .FirstOrDefaultAsync();
+            .Select(p => new { p.HajjYear, p.UnitId }));
 
         if (banned is null)
             return new BanCheckDto(false, 0, string.Empty, string.Empty);
 
-        var unitName = await _units.Query()
+        var unitName = await _units.FirstOrDefaultAsync(_units.Query()
             .Where(u => u.UnitId == banned.UnitId)
-            .Select(u => u.UnitNameAr)
-            .FirstOrDefaultAsync() ?? "—";
+            .Select(u => u.UnitNameAr)) ?? "—";
 
         return new BanCheckDto(true, banned.HajjYear, unitName,
             $"أدّى الحج عام {banned.HajjYear} — لا يُسمح بالتسجيل مرة ثانية");
@@ -157,8 +153,8 @@ public class PilgrimService : IPilgrimService
         {
             foreach (var item in items)
             {
-                bool exists = await _pilgrims.Query()
-                    .AnyAsync(p => p.NIC == item.NIC && p.HajjYear == year);
+                bool exists = await _pilgrims.AnyAsync(_pilgrims.Query()
+                    .Where(p => p.NIC == item.NIC && p.HajjYear == year));
                 if (exists)
                     return Result.Failure($"الموظف برقم هوية {item.NIC} مسجل مسبقاً");
 

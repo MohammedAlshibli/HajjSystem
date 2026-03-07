@@ -3,7 +3,6 @@ using HajjSystem.Application.Common.Models;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Domain.Constants;
 using HajjSystem.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HajjSystem.Application.Services.Implementations;
 
@@ -43,10 +42,10 @@ public class FlightDistributionService : IFlightDistributionService
     {
         int year = _settings.ActiveHajjYear;
 
-        var flights = await _flights.Query()
+        var flights = await _flights.ToListAsync(_flights.Query()
             .Where(f => f.FlightYear == year)
             .OrderBy(f => f.FlightDate)
-            .ToListAsync();
+            );
 
         var depFlights = flights.Where(f => f.ParameterId == HajjConstants.FlightDirection.Departure)
             .OrderBy(f => f.FlightDate).ToList();
@@ -63,14 +62,14 @@ public class FlightDistributionService : IFlightDistributionService
         var existing = await _passengers.ToListAsync(_passengers.Query().Where(p => p.HajjYear == year));
         _passengers.RemoveRange(existing);
 
-        var pilgrims = await _pilgrims.Query()
+        var pilgrims = await _pilgrims.ToListAsync(_pilgrims.Query()
             .Include(p => p.Unit)
             .Where(p => p.HajjYear   == year &&
                          p.FitResult  == HajjConstants.FitResult.DoctorApproved &&
                          p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved)
             .OrderByDescending(p => p.TypeId == HajjConstants.PilgrimType.Admin)
             .ThenBy(p => p.RegistrationDate)
-            .ToListAsync();
+            );
 
         if (!pilgrims.Any()) return Result.Failure<DistributionResultDto>("لا يوجد حجاج لائقون طبياً");
 
@@ -115,8 +114,8 @@ public class FlightDistributionService : IFlightDistributionService
         var pilgrim = await _pilgrims.GetByIdAsync(pilgrimId);
         if (pilgrim is null) return Result.Failure("الحاج غير موجود");
 
-        var allFlights = await _flights.Query()
-            .Where(f => f.FlightYear == year).OrderBy(f => f.FlightDate).ToListAsync();
+        var allFlights = await _flights.ToListAsync(_flights.Query()
+            .Where(f => f.FlightYear == year).OrderBy(f => f.FlightDate));
 
         var depFlights = allFlights.Where(f => f.ParameterId == HajjConstants.FlightDirection.Departure)
             .OrderBy(f => f.FlightDate).ToList();
@@ -130,8 +129,8 @@ public class FlightDistributionService : IFlightDistributionService
         var target = allFlights.FirstOrDefault(f => f.FlightId == targetDepFlightId);
         if (target is null) return Result.Failure("الرحلة غير موجودة");
 
-        int count = await _passengers.Query()
-            .CountAsync(p => p.FlightId == targetDepFlightId && p.HajjYear == year);
+        int count = await _passengers.CountAsync(
+            _passengers.Query().Where(p => p.FlightId == targetDepFlightId && p.HajjYear == year));
         if (count >= target.FlightCapacity)
             return Result.Failure($"الرحلة ممتلئة (السعة: {target.FlightCapacity})");
 

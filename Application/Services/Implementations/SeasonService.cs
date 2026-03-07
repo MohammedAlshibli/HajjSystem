@@ -4,7 +4,6 @@ using HajjSystem.Application.DTOs;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Domain.Constants;
 using HajjSystem.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HajjSystem.Application.Services.Implementations;
 
@@ -26,14 +25,14 @@ public class SeasonService : ISeasonService
 
     public async Task<SeasonStatsDto> GetStatsAsync(int year)
     {
-        var pilgrims = await _pilgrims.Query()
+        var pilgrims = await _pilgrims.ToListAsync(_pilgrims.Query()
             .Where(p => p.HajjYear == year)
             .Select(p => new { p.ConfirmCode, p.TypeId, p.UnitId })
-            .ToListAsync();
+            );
 
-        var units = await _units.Query()
+        var units = await _units.ToListAsync(_units.Query()
             .Select(u => new { u.UnitId, u.UnitNameAr, u.AllowNumber, u.StandBy })
-            .ToListAsync();
+            );
 
         var unitBreakdown = units.Select(u => new UnitBreakdownDto(
             u.UnitId, u.UnitNameAr, u.AllowNumber, u.StandBy,
@@ -56,11 +55,11 @@ public class SeasonService : ISeasonService
 
     public async Task<IEnumerable<SeasonStatsDto>> GetHistoryAsync()
     {
-        var years = await _pilgrims.Query()
+        var years = await _pilgrims.ToListAsync(_pilgrims.Query()
             .Select(p => p.HajjYear)
             .Distinct()
             .OrderByDescending(y => y)
-            .ToListAsync();
+            );
 
         var result = new List<SeasonStatsDto>();
         foreach (var y in years)
@@ -74,10 +73,10 @@ public class SeasonService : ISeasonService
         if (newYear <= currentYear)
             return Result.Failure<RolloverResultDto>($"السنة الجديدة ({newYear}) يجب أن تكون أكبر من الحالية ({currentYear})");
 
-        int pending = await _pilgrims.Query()
-            .CountAsync(p => p.HajjYear == currentYear &&
+        int pending = await _pilgrims.CountAsync(
+            _pilgrims.Query().Where(p => p.HajjYear == currentYear &&
                               p.ConfirmCode != HajjConstants.ConfirmCode.HQApproved &&
-                              p.ConfirmCode != HajjConstants.ConfirmCode.Cancelled);
+                              p.ConfirmCode != HajjConstants.ConfirmCode.Cancelled));
         if (pending > 0)
             return Result.Failure<RolloverResultDto>($"يوجد {pending} سجل لم تتم الموافقة النهائية عليه");
 

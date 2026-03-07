@@ -3,7 +3,6 @@ using HajjSystem.Application.Common.Models;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Domain.Constants;
 using HajjSystem.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HajjSystem.Application.Services.Implementations;
 
@@ -43,9 +42,8 @@ public class MedicalService : IMedicalService
     {
         int year = _settings.ActiveHajjYear;
         var list = ids.ToList();
-        var pilgrims = await _pilgrims.Query()
-            .Where(p => list.Contains(p.PilgrimId) && p.HajjYear == year)
-            .ToListAsync();
+        var pilgrims = await _pilgrims.ToListAsync(_pilgrims.Query()
+            .Where(p => list.Contains(p.PilgrimId) && p.HajjYear == year));
 
         if (!pilgrims.Any()) return Result.Failure<int>("لم يتم العثور على السجلات");
 

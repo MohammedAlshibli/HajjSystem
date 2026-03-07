@@ -3,15 +3,14 @@ using HajjSystem.Application.Common.Models;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Domain.Constants;
 using HajjSystem.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HajjSystem.Application.Services.Implementations;
 
 public class ConfirmationService : IConfirmationService
 {
-    private readonly IRepository<Pilgrim> _pilgrims;
-    private readonly IUnitOfWork          _uow;
-    private readonly ICurrentUserService  _currentUser;
+    private readonly IRepository<Pilgrim>  _pilgrims;
+    private readonly IUnitOfWork           _uow;
+    private readonly ICurrentUserService   _currentUser;
     private readonly IHajjSettingsAccessor _settings;
 
     public ConfirmationService(
@@ -44,11 +43,12 @@ public class ConfirmationService : IConfirmationService
     {
         int year = _settings.ActiveHajjYear;
         var list = ids.ToList();
-        var pilgrims = await _pilgrims.Query()
-            .Where(p => list.Contains(p.PilgrimId) &&
-                         p.HajjYear    == year &&
-                         p.ConfirmCode == HajjConstants.ConfirmCode.Pending)
-            .ToListAsync();
+
+        var pilgrims = await _pilgrims.ToListAsync(
+            _pilgrims.Query()
+                .Where(p => list.Contains(p.PilgrimId) &&
+                             p.HajjYear    == year &&
+                             p.ConfirmCode == HajjConstants.ConfirmCode.Pending));
 
         if (!pilgrims.Any()) return Result.Failure<int>("لا توجد سجلات في انتظار التأكيد");
 
@@ -90,9 +90,10 @@ public class ConfirmationService : IConfirmationService
     public async Task<Result<int>> FinalApproveAllAsync()
     {
         int year = _settings.ActiveHajjYear;
-        var pilgrims = await _pilgrims.Query()
-            .Where(p => p.HajjYear == year && p.ConfirmCode == HajjConstants.ConfirmCode.Confirmed)
-            .ToListAsync();
+        var pilgrims = await _pilgrims.ToListAsync(
+            _pilgrims.Query()
+                .Where(p => p.HajjYear == year &&
+                             p.ConfirmCode == HajjConstants.ConfirmCode.Confirmed));
         if (!pilgrims.Any()) return Result.Failure<int>("لا توجد سجلات مؤكدة من الأسلحة");
         return await ApproveList(pilgrims);
     }
@@ -101,11 +102,11 @@ public class ConfirmationService : IConfirmationService
     {
         int year = _settings.ActiveHajjYear;
         var list = ids.ToList();
-        var pilgrims = await _pilgrims.Query()
-            .Where(p => list.Contains(p.PilgrimId) &&
-                         p.HajjYear    == year &&
-                         p.ConfirmCode == HajjConstants.ConfirmCode.Confirmed)
-            .ToListAsync();
+        var pilgrims = await _pilgrims.ToListAsync(
+            _pilgrims.Query()
+                .Where(p => list.Contains(p.PilgrimId) &&
+                             p.HajjYear    == year &&
+                             p.ConfirmCode == HajjConstants.ConfirmCode.Confirmed));
         if (!pilgrims.Any()) return Result.Failure<int>("لا توجد سجلات مؤكدة من المحددين");
         return await ApproveList(pilgrims);
     }

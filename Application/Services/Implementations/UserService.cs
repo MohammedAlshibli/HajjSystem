@@ -2,7 +2,6 @@ using HajjSystem.Application.Common.Interfaces;
 using HajjSystem.Application.Common.Models;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Domain.Entities.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace HajjSystem.Application.Services.Implementations;
 
@@ -37,9 +36,12 @@ public class UserService : IUserService
             .Include(u => u.UserServices)
             .FirstOrDefaultAsync(u => u.UserName == userName.ToUpper());
 
-    public Task<IEnumerable<User>> GetAllAsync() => 
-        _users.Query().Include(u => u.UserRoles).Include(u => u.UserServices)
-            .ToListAsync().ContinueWith(t => (IEnumerable<User>)t.Result);
+    public async Task<IEnumerable<User>> GetAllAsync()
+    {
+        var list = await _users.ToListAsync(
+            _users.Query().Include(u => u.UserRoles).Include(u => u.UserServices));
+        return list;
+    }
 
     public async Task<Result> CreateAsync(User user, IEnumerable<int> roleIds, IEnumerable<int> unitIds)
     {
@@ -93,7 +95,7 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<PermissionDto>> GetPermissionsAsync(string userName)
     {
-        return await _users.Query()
+        return await _users.ToListAsync(_users.Query()
             .Include(u => u.UserRoles).ThenInclude(r => r.Role)
                 .ThenInclude(r => r!.RolePermissions).ThenInclude(rp => rp.Permission)
             .Where(u => u.UserName == userName.ToUpper())
@@ -104,6 +106,6 @@ public class UserService : IUserService
                     rp.Permission.ActionName,
                     rp.Permission.Icon,
                     rp.Permission.ScreenNameAr))))
-            .ToListAsync();
+            );
     }
 }
