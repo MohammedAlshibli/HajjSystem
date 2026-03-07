@@ -6,10 +6,6 @@ public interface IUnitOfWork : IDisposable
     Task<ITransaction> BeginTransactionAsync(CancellationToken ct = default);
 }
 
-/// <summary>
-/// Clean abstraction over IDbContextTransaction.
-/// Application layer knows nothing about EF Core.
-/// </summary>
 public interface ITransaction : IDisposable, IAsyncDisposable
 {
     Task CommitAsync(CancellationToken ct = default);
