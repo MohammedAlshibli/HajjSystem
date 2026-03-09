@@ -39,34 +39,31 @@ public class PilgrimService : IPilgrimService
         if (unit is null)
             return Result.Failure<Pilgrim>("الوحدة غير موجودة");
 
-        // Permanent ban check — has this NIC ever done HQ-approved Hajj?
-        var previousYear = await _pilgrims.FirstOrDefaultAsync(_pilgrims.Query()
-            .Where(p => p.NIC == pilgrim.NIC &&
-                         p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved)
-            .Select(p => p.HajjYear));
+        // Permanent ban — load entity first, then check in memory
+        var banned = await _pilgrims.FirstOrDefaultAsync(
+            _pilgrims.Query().Where(p =>
+                p.NIC         == pilgrim.NIC &&
+                p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved));
 
-        if (previousYear > 0)
+        if (banned is not null)
             return Result.Failure<Pilgrim>(
-                $"لا يمكن التسجيل — أدّى الفريضة عام {previousYear} ولا يُسمح بالتكرار");
+                $"لا يمكن التسجيل — أدّى الفريضة عام {banned.HajjYear} ولا يُسمح بالتكرار");
 
-        // Duplicate check for current season
-        bool duplicate = await _pilgrims.AnyAsync(_pilgrims.Query()
-            .Where(p => p.NIC == pilgrim.NIC && p.HajjYear == year));
+        bool duplicate = await _pilgrims.AnyAsync(
+            _pilgrims.Query().Where(p => p.NIC == pilgrim.NIC && p.HajjYear == year));
         if (duplicate)
             return Result.Failure<Pilgrim>("الموظف مسجل مسبقاً في هذه الدورة");
 
         using var tx = await _uow.BeginTransactionAsync();
         try
         {
-            // Count inside transaction → race-condition safe
             int consumed = await _pilgrims.CountAsync(_pilgrims.Query()
-                .Where(p => p.UnitId     == pilgrim.UnitId &&
-                             p.TypeId     == pilgrim.TypeId &&
-                             p.HajjYear   == year));
+                .Where(p => p.UnitId   == pilgrim.UnitId &&
+                             p.TypeId   == pilgrim.TypeId &&
+                             p.HajjYear == year));
 
             int allowed = pilgrim.TypeId == HajjConstants.PilgrimType.Regular
-                ? unit.AllowNumber
-                : unit.StandBy;
+                ? unit.AllowNumber : unit.StandBy;
 
             if (consumed >= allowed)
                 return Result.Failure<Pilgrim>(
@@ -81,7 +78,6 @@ public class PilgrimService : IPilgrimService
             _pilgrims.Add(pilgrim);
             await _uow.SaveChangesAsync();
             await tx.CommitAsync();
-
             return Result.Success(pilgrim);
         }
         catch (Exception ex)
@@ -93,27 +89,25 @@ public class PilgrimService : IPilgrimService
 
     public async Task<BanCheckDto> CheckPermanentBanAsync(string nic)
     {
-        var banned = await _pilgrims.FirstOrDefaultAsync(_pilgrims.Query()
-            .Where(p => p.NIC == nic &&
-                         p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved)
-            .Select(p => new { p.HajjYear, p.UnitId }));
+        var banned = await _pilgrims.FirstOrDefaultAsync(
+            _pilgrims.Query().Where(p =>
+                p.NIC         == nic &&
+                p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved));
 
         if (banned is null)
             return new BanCheckDto(false, 0, string.Empty, string.Empty);
 
-        var unitName = await _units.FirstOrDefaultAsync(_units.Query()
-            .Where(u => u.UnitId == banned.UnitId)
-            .Select(u => u.UnitNameAr)) ?? "—";
+        var unit = await _units.GetByIdAsync(banned.UnitId ?? 0);
+        string unitName = unit?.UnitNameAr ?? "—";
 
         return new BanCheckDto(true, banned.HajjYear, unitName,
             $"أدّى الحج عام {banned.HajjYear} — لا يُسمح بالتسجيل مرة ثانية");
     }
 
-    public async Task<Result> SoftDeleteAsync(int pilgrimId)
+    public async Task<r> SoftDeleteAsync(int pilgrimId)
     {
         var p = await _pilgrims.GetByIdAsync(pilgrimId);
         if (p is null) return Result.Failure("السجل غير موجود");
-
         p.IsDeleted = true;
         p.DeletedBy = _currentUser.UserName;
         p.DeletedOn = DateTime.Now;
@@ -123,7 +117,7 @@ public class PilgrimService : IPilgrimService
         return Result.Success();
     }
 
-    public async Task<Result> UpdateAsync(Pilgrim pilgrim)
+    public async Task<r> UpdateAsync(Pilgrim pilgrim)
     {
         StampUpdate(pilgrim);
         _pilgrims.Update(pilgrim);
@@ -131,14 +125,14 @@ public class PilgrimService : IPilgrimService
         return Result.Success();
     }
 
-    public async Task<Result> BulkRegisterNonModAsync(IEnumerable<Pilgrim> list)
+    public async Task<r> BulkRegisterNonModAsync(IEnumerable<Pilgrim> list)
     {
         int year  = _settings.ActiveHajjYear;
         var items = list.ToList();
         if (!items.Any()) return Result.Failure("القائمة فارغة");
 
-        var firstUnit = items.Select(x => x.UnitId).FirstOrDefault();
-        var unit      = firstUnit.HasValue ? await _units.GetByIdAsync(firstUnit.Value) : null;
+        var firstUnitId = items.Select(x => x.UnitId).FirstOrDefault();
+        var unit        = firstUnitId.HasValue ? await _units.GetByIdAsync(firstUnitId.Value) : null;
         if (unit is null) return Result.Failure("بيانات الوحدة مفقودة");
 
         int regularCount = items.Count(c => c.TypeId == HajjConstants.PilgrimType.Regular);
@@ -153,8 +147,8 @@ public class PilgrimService : IPilgrimService
         {
             foreach (var item in items)
             {
-                bool exists = await _pilgrims.AnyAsync(_pilgrims.Query()
-                    .Where(p => p.NIC == item.NIC && p.HajjYear == year));
+                bool exists = await _pilgrims.AnyAsync(
+                    _pilgrims.Query().Where(p => p.NIC == item.NIC && p.HajjYear == year));
                 if (exists)
                     return Result.Failure($"الموظف برقم هوية {item.NIC} مسجل مسبقاً");
 
@@ -176,7 +170,6 @@ public class PilgrimService : IPilgrimService
         }
     }
 
-    // ── Stamp helpers ────────────────────────────────────────────────
     private void Stamp(BaseEntity e)
     {
         e.TenantId  = _currentUser.TenantId;

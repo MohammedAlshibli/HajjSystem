@@ -16,13 +16,13 @@ public class Repository<T> : IRepository<T> where T : class
         _set = ctx.Set<T>();
     }
 
-    public IQueryable<T> Query() => _set.AsQueryable();
-
-    public Task<T?>        GetByIdAsync(int id)              => _set.FindAsync(id).AsTask()!;
-    public Task<List<T>>   ToListAsync(IQueryable<T> query)  => query.ToListAsync();
-    public Task<T?>        FirstOrDefaultAsync(IQueryable<T> query) => query.FirstOrDefaultAsync();
-    public Task<bool>      AnyAsync(IQueryable<T> query)     => query.AnyAsync();
-    public Task<int>       CountAsync(IQueryable<T> query)   => query.CountAsync();
+    public IQueryable<T>    Query()                              => _set.AsQueryable();
+    public Task<T?>         GetByIdAsync(int id)                => _set.FindAsync(id).AsTask()!;
+    public Task<List<T>>    ToListAsync(IQueryable<T> query)    => query.ToListAsync();
+    public Task<T?>         FirstOrDefaultAsync(IQueryable<T> query) => query.FirstOrDefaultAsync();
+    public Task<bool>       AnyAsync(IQueryable<T> query)       => query.AnyAsync();
+    public Task<int>        CountAsync(IQueryable<T> query)     => query.CountAsync();
+    public Task<List<T>>    FindAsync(Expression<Func<T, bool>> predicate) => _set.Where(predicate).ToListAsync();
 
     public void Add(T entity)                        => _set.Add(entity);
     public void Update(T entity)                     => _ctx.Entry(entity).State = EntityState.Modified;
