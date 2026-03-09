@@ -1,14 +1,19 @@
 using HajjSystem.Application.DTOs;
 using HajjSystem.Application.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace HajjSystem.Infrastructure.Services;
 
 public class HrmsService : IHrmsService
 {
-    private readonly HttpClient    _http;
+    private readonly HttpClient     _http;
     private readonly IConfiguration _cfg;
+
+    private static readonly JsonSerializerOptions _jsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     public HrmsService(HttpClient http, IConfiguration cfg)
     {
@@ -26,6 +31,6 @@ public class HrmsService : IHrmsService
         if (!response.IsSuccessStatusCode) return null;
 
         var json = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<HrmsEmployeeDto>(json);
+        return JsonSerializer.Deserialize<HrmsEmployeeDto>(json, _jsonOpts);
     }
 }
