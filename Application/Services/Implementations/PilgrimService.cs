@@ -104,7 +104,7 @@ public class PilgrimService : IPilgrimService
             $"أدّى الحج عام {banned.HajjYear} — لا يُسمح بالتسجيل مرة ثانية");
     }
 
-    public async Task<r> SoftDeleteAsync(int pilgrimId)
+    public async Task<Result> SoftDeleteAsync(int pilgrimId)
     {
         var p = await _pilgrims.GetByIdAsync(pilgrimId);
         if (p is null) return Result.Failure("السجل غير موجود");
@@ -117,7 +117,7 @@ public class PilgrimService : IPilgrimService
         return Result.Success();
     }
 
-    public async Task<r> UpdateAsync(Pilgrim pilgrim)
+    public async Task<Result> UpdateAsync(Pilgrim pilgrim)
     {
         StampUpdate(pilgrim);
         _pilgrims.Update(pilgrim);
@@ -125,7 +125,7 @@ public class PilgrimService : IPilgrimService
         return Result.Success();
     }
 
-    public async Task<r> BulkRegisterNonModAsync(IEnumerable<Pilgrim> list)
+    public async Task<Result> BulkRegisterNonModAsync(IEnumerable<Pilgrim> list)
     {
         int year  = _settings.ActiveHajjYear;
         var items = list.ToList();

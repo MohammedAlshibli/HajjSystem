@@ -106,7 +106,7 @@ public class FlightDistributionService : IFlightDistributionService
         }
     }
 
-    public async Task<r> MovePilgrimAsync(int pilgrimId, int targetDepFlightId)
+    public async Task<Result> MovePilgrimAsync(int pilgrimId, int targetDepFlightId)
     {
         int year = _settings.ActiveHajjYear;
 

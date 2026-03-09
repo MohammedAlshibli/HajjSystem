@@ -47,7 +47,7 @@ public class UserService : IUserService
                 .Include(u => u.UserServices));
     }
 
-    public async Task<r> CreateAsync(User user, IEnumerable<int> roleIds, IEnumerable<int> unitIds)
+    public async Task<Result> CreateAsync(User user, IEnumerable<int> roleIds, IEnumerable<int> unitIds)
     {
         try
         {
@@ -66,7 +66,7 @@ public class UserService : IUserService
         catch (Exception ex) { return Result.Failure(ex.Message); }
     }
 
-    public async Task<r> UpdateAsync(User user, IEnumerable<int> roleIds, IEnumerable<int> unitIds)
+    public async Task<Result> UpdateAsync(User user, IEnumerable<int> roleIds, IEnumerable<int> unitIds)
     {
         try
         {
