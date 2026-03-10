@@ -2,7 +2,6 @@ using HajjSystem.Application;
 using HajjSystem.Application.Common.Interfaces;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Infrastructure;
-using HajjSystem.Infrastructure.Services;
 using HajjSystem.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -32,7 +31,6 @@ builder.Services.Configure<HajjSettings>(builder.Configuration.GetSection("HajjS
 // ── Application + Infrastructure DI ──────────────────────────────────────
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddHttpClient<IHrmsService, HrmsService>();
 
 // ── Web-layer services ────────────────────────────────────────────────────
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();

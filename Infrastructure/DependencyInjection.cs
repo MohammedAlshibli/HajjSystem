@@ -1,4 +1,6 @@
 using HajjSystem.Application.Common.Interfaces;
+using HajjSystem.Application.Services.Interfaces;
+using HajjSystem.Infrastructure.Services;
 using HajjSystem.Infrastructure.Data;
 using HajjSystem.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
