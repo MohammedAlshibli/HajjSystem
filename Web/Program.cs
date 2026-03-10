@@ -2,6 +2,7 @@ using HajjSystem.Application;
 using HajjSystem.Application.Common.Interfaces;
 using HajjSystem.Application.Services.Interfaces;
 using HajjSystem.Infrastructure;
+using HajjSystem.Infrastructure.Services;
 using HajjSystem.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
