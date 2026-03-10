@@ -1,7 +1,4 @@
 using HajjSystem.Application.Common.Interfaces;
-using HajjSystem.Application.Services.Interfaces;
-using HajjSystem.Domain.Entities;
-using HajjSystem.Domain.Entities.Identity;
 using HajjSystem.Infrastructure.Data;
 using HajjSystem.Infrastructure.Repositories;
 using HajjSystem.Infrastructure.Services;
@@ -19,17 +16,11 @@ public static class DependencyInjection
     {
         // ── Database ──────────────────────────────────────────────────────
         services.AddDbContext<AppDbContext>((sp, opts) =>
-        {
             opts.UseSqlServer(
                 cfg.GetConnectionString("DefaultConnection"),
-                sql => sql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
+                sql => sql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
 
-            // Pass tenant resolver lambdas into DbContext constructor
-            var current = sp.GetRequiredService<ICurrentUserService>();
-            // NOTE: DbContext is registered with overloaded ctor via factory below
-        });
-
-        // Register DbContext via factory so we can pass Func<> delegates
+        // Override default registration to inject tenant delegates
         services.AddScoped<AppDbContext>(sp =>
         {
             var opts    = sp.GetRequiredService<DbContextOptions<AppDbContext>>();
