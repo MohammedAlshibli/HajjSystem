@@ -1,0 +1,102 @@
+@model LoginModel
+@{
+    ViewData["Title"] = "تسجيل الدخول";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام الحج — تسجيل الدخول</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a5276 0%, #2e86c1 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-logo h2 {
+            color: #1a5276;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        .login-logo p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .btn-login {
+            background: #1a5276;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 8px;
+        }
+        .btn-login:hover { background: #154360; }
+        .form-control {
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+        .input-group-text {
+            background: #f0f4f8;
+            border-radius: 8px 0 0 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo">
+            <h2>🕌 نظام إدارة الحج</h2>
+            <p>الرجاء إدخال بيانات تسجيل الدخول</p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @Html.ValidationSummary(true, "", new { @class = "mb-0" })
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <form asp-action="Login" asp-controller="Account" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@Context.Request.Query["returnUrl"]" />
+
+            <div class="mb-3">
+                <label asp-for="UserName" class="form-label fw-bold">اسم المستخدم</label>
+                <input asp-for="UserName" class="form-control text-end"
+                       placeholder="أدخل اسم المستخدم" autocomplete="username" autofocus />
+                <span asp-validation-for="UserName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Password" class="form-label fw-bold">كلمة المرور</label>
+                <input asp-for="Password" type="password" class="form-control text-end"
+                       placeholder="أدخل كلمة المرور" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login text-white">
+                تسجيل الدخول
+            </button>
+        </form>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
