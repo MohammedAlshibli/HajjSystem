@@ -32,6 +32,7 @@ builder.Services.Configure<HajjSettings>(builder.Configuration.GetSection("HajjS
 // ── Application + Infrastructure DI ──────────────────────────────────────
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHttpClient<IHrmsService, HrmsService>();
 
 // ── Web-layer services ────────────────────────────────────────────────────
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();

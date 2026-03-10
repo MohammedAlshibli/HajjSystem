@@ -1,7 +1,6 @@
 using HajjSystem.Application.Common.Interfaces;
 using HajjSystem.Infrastructure.Data;
 using HajjSystem.Infrastructure.Repositories;
-using HajjSystem.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
