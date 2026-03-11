@@ -35,32 +35,34 @@ public class AccountController : Controller
             return View(model);
         }
 
-        bool authenticated = false;
-
-        // Local admin bypass (development / emergency)
+        // ── Local admin bypass ────────────────────────────────────────────
         if (model.UserName == "ADMIN" && model.Password == "Oman")
         {
-            authenticated = true;
+            var adminClaims = new List<Claim>
+            {
+                new(ClaimTypes.Name, "ADMIN"),
+                new("TenantId",   "0"),
+                new("IsSysAdmin", "True"),
+                new("FullName",   "مدير النظام")
+            };
+            await SignIn(adminClaims);
+            return LocalRedirect(returnUrl ?? Url.Action("Index", "Home")!);
         }
-        else
+
+        // ── LDAP ──────────────────────────────────────────────────────────
+        using var ldap = new LdapConnection();
+        try
         {
-            // LDAP against Active Directory
-            using var ldap = new LdapConnection();
-            try
-            {
-                ldap.Connect("10.22.8.8", 389);
-                ldap.Bind("ITS\\" + model.UserName, model.Password);
-                authenticated = true;
-            }
-            catch (LdapException)
-            {
-                ModelState.AddModelError("", "اسم المستخدم أو كلمة المرور غير صحيح");
-                return View(model);
-            }
+            ldap.Connect("10.22.8.8", 389);
+            ldap.Bind("ITS\\" + model.UserName, model.Password);
+        }
+        catch (LdapException)
+        {
+            ModelState.AddModelError("", "اسم المستخدم أو كلمة المرور غير صحيح");
+            return View(model);
         }
 
-        if (!authenticated) return View(model);
-
+        // ── Load user from DB ─────────────────────────────────────────────
         var user = await _userService.GetByUserNameAsync(model.UserName);
         if (user is null)
         {
@@ -80,13 +82,7 @@ public class AccountController : Controller
         foreach (var p in permissions)
             claims.Add(new Claim("Permission", $"{p.ControllerName}.{p.ActionName}"));
 
-        var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
-
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme, principal,
-            new AuthenticationProperties { IsPersistent = false });
-
+        await SignIn(claims);
         return LocalRedirect(returnUrl ?? Url.Action("Index", "Home")!);
     }
 
@@ -97,5 +93,14 @@ public class AccountController : Controller
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction("Login");
     }
-}
 
+    // ── Helper ────────────────────────────────────────────────────────────
+    private Task SignIn(List<Claim> claims)
+    {
+        var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        return HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme, principal,
+            new AuthenticationProperties { IsPersistent = false });
+    }
+}
