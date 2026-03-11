@@ -1,3 +1,4 @@
+using HajjSystem.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using HajjSystem.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
@@ -98,8 +99,3 @@ public class AccountController : Controller
     }
 }
 
-public class LoginModel
-{
-    public string UserName { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
