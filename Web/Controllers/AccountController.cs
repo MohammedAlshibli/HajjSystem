@@ -4,7 +4,6 @@ using HajjSystem.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using Novell.Directory.Ldap;
 using System.Security.Claims;
 
 namespace HajjSystem.Web.Controllers;
@@ -23,84 +22,61 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginModel model, string? returnUrl)
     {
-        if (!ModelState.IsValid) return View(model);
+        var username = (model.UserName ?? "").Trim().ToUpper();
+        var password = model.Password ?? "";
 
-        model.UserName = model.UserName?.Trim().ToUpper() ?? string.Empty;
-
-        if (string.IsNullOrEmpty(model.UserName) ||
-            model.UserName.Contains("'") || model.UserName.Contains("/") ||
-            model.UserName.ToLower().Contains("select"))
+        // ── Hardcoded bypass — always works regardless of DB ─────────────
+        if (username == "ADMIN" && password == "Oman")
         {
-            ModelState.AddModelError("", "اسم المستخدم غير صالح");
-            return View(model);
+            await SignInAsync("ADMIN", "مدير النظام", tenantId: 0, isSysAdmin: true);
+            return LocalRedirect(returnUrl ?? "/");
         }
 
-        // ── Local admin bypass ────────────────────────────────────────────
-        if (model.UserName == "ADMIN" && model.Password == "Oman")
-        {
-            var adminClaims = new List<Claim>
-            {
-                new(ClaimTypes.Name, "ADMIN"),
-                new("TenantId",   "0"),
-                new("IsSysAdmin", "True"),
-                new("FullName",   "مدير النظام")
-            };
-            await SignIn(adminClaims);
-            return LocalRedirect(returnUrl ?? Url.Action("Index", "Home")!);
-        }
-
-        // ── LDAP ──────────────────────────────────────────────────────────
-        using var ldap = new LdapConnection();
+        // ── LDAP + DB for real users ──────────────────────────────────────
         try
         {
+            using var ldap = new Novell.Directory.Ldap.LdapConnection();
             ldap.Connect("10.22.8.8", 389);
-            ldap.Bind("ITS\\" + model.UserName, model.Password);
+            ldap.Bind("ITS\\" + username, password);
         }
-        catch (LdapException)
+        catch
         {
             ModelState.AddModelError("", "اسم المستخدم أو كلمة المرور غير صحيح");
             return View(model);
         }
 
-        // ── Load user from DB ─────────────────────────────────────────────
-        var user = await _userService.GetByUserNameAsync(model.UserName);
+        var user = await _userService.GetByUserNameAsync(username);
         if (user is null)
         {
-            ModelState.AddModelError("", "لم يتم تسجيل هذا المستخدم — يرجى التواصل مع المسؤول");
+            ModelState.AddModelError("", "المستخدم غير مسجل في النظام");
             return View(model);
         }
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Name, user.UserName),
-            new("TenantId",   user.TenantId.ToString()),
-            new("IsSysAdmin", user.IsSysAdmin.ToString()),
-            new("FullName",   user.FullName)
-        };
-
-        var permissions = await _userService.GetPermissionsAsync(user.UserName);
-        foreach (var p in permissions)
-            claims.Add(new Claim("Permission", $"{p.ControllerName}.{p.ActionName}"));
-
-        await SignIn(claims);
-        return LocalRedirect(returnUrl ?? Url.Action("Index", "Home")!);
+        await SignInAsync(user.UserName, user.FullName, user.TenantId, user.IsSysAdmin);
+        return LocalRedirect(returnUrl ?? "/");
     }
 
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction("Login");
     }
 
-    // ── Helper ────────────────────────────────────────────────────────────
-    private Task SignIn(List<Claim> claims)
+    private Task SignInAsync(string userName, string fullName, int tenantId, bool isSysAdmin)
     {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, userName),
+            new("TenantId",   tenantId.ToString()),
+            new("IsSysAdmin", isSysAdmin.ToString()),
+            new("FullName",   fullName)
+        };
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         return HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme, principal,
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            principal,
             new AuthenticationProperties { IsPersistent = false });
     }
 }
