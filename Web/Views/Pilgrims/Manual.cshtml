@@ -1,0 +1,141 @@
+@{ ViewData["Title"] = "إضافة حاج يدوياً"; }
+@{
+    var units = ViewBag.Units as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<div class="page-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="page-title mb-0">➕ إضافة حاج يدوياً</div>
+        <a href="/Pilgrims" class="btn btn-secondary btn-sm">← عودة للقائمة</a>
+    </div>
+
+    <form id="manualForm">
+        <div class="row g-3">
+
+            <!-- Basic Info -->
+            <div class="col-12"><h6 class="text-primary border-bottom pb-1">البيانات الأساسية</h6></div>
+
+            <div class="col-md-6">
+                <label class="form-label">الاسم الكامل <span class="text-danger">*</span></label>
+                <input name="fullName" class="form-control" required/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الرقم العسكري <span class="text-danger">*</span></label>
+                <input name="serviceNumber" class="form-control" required/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الرقم المدني <span class="text-danger">*</span></label>
+                <input name="nic" class="form-control" required/>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">انتهاء الرقم المدني</label>
+                <input type="date" name="nicExpire" class="form-control"/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">رقم الجواز</label>
+                <input name="passport" class="form-control"/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">انتهاء الجواز</label>
+                <input type="date" name="passportExpire" class="form-control"/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">تاريخ الميلاد</label>
+                <input type="date" name="dateOfBirth" class="form-control"/>
+            </div>
+
+            <!-- Rank & Unit -->
+            <div class="col-12 mt-2"><h6 class="text-primary border-bottom pb-1">الرتبة والوحدة</h6></div>
+
+            <div class="col-md-4">
+                <label class="form-label">الرتبة</label>
+                <input name="rankDesc" class="form-control" placeholder="مثال: عقيد"/>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">الوحدة <span class="text-danger">*</span></label>
+                <select name="unitId" class="form-select" required>
+                    <option value="">-- اختر الوحدة --</option>
+                    @foreach (var u in units)
+                    {
+                        <option value="@u.unitId">@u.unitNameAr (متبقي: @Math.Max(0, u.quota - u.used))</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">نوع الحاج <span class="text-danger">*</span></label>
+                <select name="typeId" class="form-select" required>
+                    <option value="1">أصيل</option>
+                    <option value="2">احتياطي</option>
+                    <option value="3">إداري</option>
+                </select>
+            </div>
+
+            <!-- Contact -->
+            <div class="col-12 mt-2"><h6 class="text-primary border-bottom pb-1">بيانات إضافية</h6></div>
+
+            <div class="col-md-3">
+                <label class="form-label">فصيلة الدم</label>
+                <select name="bloodGroup" class="form-select">
+                    <option value="">--</option>
+                    <option>A+</option><option>A-</option>
+                    <option>B+</option><option>B-</option>
+                    <option>AB+</option><option>AB-</option>
+                    <option>O+</option><option>O-</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">رقم الجوال</label>
+                <input name="gsm" class="form-control"/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المنطقة</label>
+                <input name="region" class="form-control"/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">حالة الموظف</label>
+                <select name="employeeStatus" class="form-select">
+                    <option value="0">موظف</option>
+                    <option value="1">متقاعد</option>
+                </select>
+            </div>
+
+            <!-- Submit -->
+            <div class="col-12 mt-3 d-flex gap-2">
+                <button type="button" class="btn btn-primary px-5" onclick="submitForm()">💾 حفظ الحاج</button>
+                <a href="/Pilgrims" class="btn btn-secondary">إلغاء</a>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+async function submitForm(){
+    const form = document.getElementById('manualForm');
+    if(!form.checkValidity()){ form.reportValidity(); return; }
+
+    const inputs = form.querySelectorAll('input,select');
+    const obj = {};
+    inputs.forEach(i=>{
+        if(!i.name) return;
+        obj[i.name] = i.type==='number' ? (+i.value||0) : i.value;
+    });
+
+    const btn = form.querySelector('button[type=button]');
+    btn.disabled = true; btn.textContent = '⏳ جاري الحفظ...';
+
+    const r = await postJson('/Pilgrims/ManualCreate', obj);
+    const d = await r.json();
+
+    if(r.ok){
+        showToast(d.message || 'تمت الإضافة بنجاح');
+        setTimeout(()=> window.location='/Pilgrims', 1500);
+    } else {
+        showToast(typeof d==='string'?d:(d.title||'حدث خطأ'), false);
+        btn.disabled=false; btn.textContent='💾 حفظ الحاج';
+    }
+}
+</script>
+}

@@ -41,8 +41,8 @@
 
 @section Scripts {
 <script>
-const confirmMap = {0:'معلق',1:'مؤكد',2:'ملغي',3:'معتمد مركزي',77:'محظور'};
-const confirmClr = {0:'secondary',1:'success',2:'danger',3:'primary',77:'dark'};
+const confirmMap = {0:'معلق',51:'مؤكد',99:'ملغي',77:'معتمد مركزي'};
+const confirmClr = {0:'secondary',51:'success',99:'danger',77:'primary'};
 const typeMap    = {1:'أصيل',2:'احتياطي',3:'إداري'};
 
 let table = $('#confirmTable').DataTable({
@@ -58,9 +58,9 @@ let table = $('#confirmTable').DataTable({
         {data:'confirmCode', render:v=>`<span class="badge bg-${confirmClr[v]??'secondary'}">${confirmMap[v]??v}</span>`},
         {data:'pilgrimId', render:(id,t,r)=>{
             let btns='';
-            if(r.confirmCode==0) btns+=`<button class="btn btn-xs btn-success me-1" onclick="confirmOne(${id})">تأكيد</button>`;
-            if(r.confirmCode==1) btns+=`<button class="btn btn-xs btn-danger me-1" onclick="openCancel(${id})">إلغاء</button>`;
-            if(r.confirmCode==2) btns+=`<button class="btn btn-xs btn-warning" onclick="restoreOne(${id})">استعادة</button>`;
+            if(r.confirmCode==0) btns+=`<button class='btn btn-sm btn-success me-1' onclick='confirmOne(${id})'>تأكيد</button>`;
+            if(r.confirmCode==51) btns+=`<button class='btn btn-sm btn-danger me-1' onclick='openCancel(${id})'>إلغاء</button>`;
+            if(r.confirmCode==99) btns+=`<button class='btn btn-sm btn-warning' onclick='restoreOne(${id})'>استعادة</button>`;
             return btns||'—';
         }}
     ],

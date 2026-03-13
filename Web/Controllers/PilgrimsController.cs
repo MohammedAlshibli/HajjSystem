@@ -158,4 +158,21 @@ public class PilgrimsController : BaseController
             DateOfEnlistment= dto.DOE_T,
         };
     }
+
+    // ── MANUAL CREATE (without HRMS) ─────────────────────────────────
+    [HttpGet]
+    public async Task<IActionResult> Manual()
+    {
+        var units = await _unitService.GetAllQuotasAsync();
+        ViewBag.Units = units;
+        return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ManualCreate([FromBody] Pilgrim pilgrim)
+    {
+        var result = await _pilgrimService.RegisterFromHrmsAsync(pilgrim);
+        return ServiceResult(result, new { message = "تمت الإضافة بنجاح", id = result.Value?.PilgrimId });
+    }
+
 }

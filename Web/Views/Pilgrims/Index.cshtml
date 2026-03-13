@@ -3,7 +3,7 @@
 <div class="page-card">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="page-title mb-0">🧑‍🤝‍🧑 تسجيل الحجاج</div>
-        <button class="btn btn-primary btn-sm" onclick="openCreate()">+ إضافة حاج</button>
+        <div class="d-flex gap-2"><button class="btn btn-outline-primary btn-sm" onclick="openCreate()">+ عبر HRMS</button><a href="/Pilgrims/Manual" class="btn btn-primary btn-sm">+ إضافة يدوي</a></div>
     </div>
 
     <div class="row g-3 mb-4" id="statsRow"></div>
@@ -44,8 +44,8 @@
 @section Scripts {
 <script>
 const typeMap    = {1:'أصيل',2:'احتياطي',3:'إداري'};
-const confirmMap = {0:'معلق',1:'مؤكد',2:'ملغي',3:'معتمد مركزي',77:'محظور'};
-const confirmClr = {0:'secondary',1:'success',2:'danger',3:'primary',77:'dark'};
+const confirmMap = {0:'معلق',51:'مؤكد فرع',99:'ملغي',77:'معتمد مركزي'};
+const confirmClr = {0:'secondary',51:'success',99:'danger',77:'primary'};
 
 let table = $('#pilgrimsTable').DataTable({
     ajax:{ url:'/Pilgrims/Read', dataSrc:'' },
