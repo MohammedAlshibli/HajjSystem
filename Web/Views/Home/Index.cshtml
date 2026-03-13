@@ -1,7 +1,143 @@
 @{
     ViewData["Title"] = "الرئيسية";
+    var fullName  = User.FindFirst("FullName")?.Value ?? User.Identity?.Name;
+    var isSysAdmin = User.FindFirst("IsSysAdmin")?.Value == "True";
 }
-<div class="container mt-4">
-    <h2>مرحباً بك في نظام إدارة الحج</h2>
-    <p class="text-muted">تم تسجيل الدخول بنجاح.</p>
-</div>
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>نظام الحج — الرئيسية</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
+    <style>
+        body { background: #f0f4f8; font-family: 'Segoe UI', sans-serif; }
+        .topbar {
+            background: linear-gradient(135deg, #1a3a5c, #0d6e4a);
+            color: white;
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .topbar .brand { font-size: 1.2rem; font-weight: 700; }
+        .topbar .user-info { font-size: 0.85rem; opacity: 0.85; }
+        .card-menu {
+            background: white;
+            border-radius: 14px;
+            padding: 28px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .card-menu:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            color: inherit;
+        }
+        .card-menu .icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .card-menu .title { font-size: 1rem; font-weight: 600; color: #1a3a5c; }
+        .card-menu .desc  { font-size: 0.8rem; color: #8a9bb0; margin-top: 4px; }
+        .welcome-banner {
+            background: white;
+            border-radius: 14px;
+            padding: 28px 36px;
+            margin-bottom: 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .welcome-banner .icon { font-size: 3rem; }
+        .welcome-banner h4 { margin: 0; color: #1a3a5c; font-weight: 700; }
+        .welcome-banner p  { margin: 0; color: #8a9bb0; font-size: 0.88rem; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="brand">🕌 نظام إدارة الحج</div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="user-info">
+                @if (isSysAdmin) { <span class="badge bg-warning text-dark me-2">مدير النظام</span> }
+                @fullName
+            </div>
+            <form asp-action="Logout" asp-controller="Account" method="post" class="mb-0">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm btn-outline-light">خروج</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="welcome-banner">
+            <div class="icon">👋</div>
+            <div>
+                <h4>مرحباً، @fullName</h4>
+                <p>اختر القسم الذي تريد الوصول إليه من القائمة أدناه</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <a href="/Pilgrims" class="card-menu">
+                    <div class="icon">🧑‍🤝‍🧑</div>
+                    <div class="title">الحجاج</div>
+                    <div class="desc">تسجيل وإدارة الحجاج</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/Confirmation" class="card-menu">
+                    <div class="icon">✅</div>
+                    <div class="title">التأكيد</div>
+                    <div class="desc">تأكيد وإلغاء السجلات</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/Medical" class="card-menu">
+                    <div class="icon">🏥</div>
+                    <div class="title">الصحة</div>
+                    <div class="desc">الفحص الطبي واللياقة</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/FlightDistribution" class="card-menu">
+                    <div class="icon">✈️</div>
+                    <div class="title">الرحلات</div>
+                    <div class="desc">توزيع الحجاج على الرحلات</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/CentralConfirm" class="card-menu">
+                    <div class="icon">🏛️</div>
+                    <div class="title">الموافقة المركزية</div>
+                    <div class="desc">اعتماد سجلات الحج</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="/Units" class="card-menu">
+                    <div class="icon">🏢</div>
+                    <div class="title">الوحدات</div>
+                    <div class="desc">إدارة الوحدات والحصص</div>
+                </a>
+            </div>
+            @if (isSysAdmin)
+            {
+                <div class="col-6 col-md-3">
+                    <a href="/SeasonRollover" class="card-menu">
+                        <div class="icon">📅</div>
+                        <div class="title">ترحيل الموسم</div>
+                        <div class="desc">إغلاق وفتح موسم جديد</div>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
