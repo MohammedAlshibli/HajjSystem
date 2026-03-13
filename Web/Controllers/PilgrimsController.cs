@@ -169,8 +169,12 @@ public class PilgrimsController : BaseController
     }
 
     [HttpPost]
+    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> ManualCreate([FromBody] Pilgrim pilgrim)
     {
+        if (pilgrim is null)
+            return BadRequest("البيانات المرسلة فارغة");
+
         try
         {
             var result = await _pilgrimService.RegisterFromHrmsAsync(pilgrim);
@@ -180,7 +184,7 @@ public class PilgrimsController : BaseController
         }
         catch (Exception ex)
         {
-            return BadRequest($"فشل الحفظ: {ex.Message}");
+            return BadRequest($"فشل الحفظ: {ex.InnerException?.Message ?? ex.Message}");
         }
     }
 

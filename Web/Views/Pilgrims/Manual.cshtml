@@ -116,24 +116,43 @@ async function submitForm(){
     const form = document.getElementById('manualForm');
     if(!form.checkValidity()){ form.reportValidity(); return; }
 
-    const inputs = form.querySelectorAll('input,select');
-    const obj = {};
-    inputs.forEach(i=>{
-        if(!i.name) return;
-        obj[i.name] = i.type==='number' ? (+i.value||0) : i.value;
-    });
+    const obj = {
+        fullName:       form.querySelector('[name=fullName]').value,
+        serviceNumber:  form.querySelector('[name=serviceNumber]').value,
+        nic:            form.querySelector('[name=nic]').value,
+        passport:       form.querySelector('[name=passport]').value || 'لايوجد',
+        rankDesc:       form.querySelector('[name=rankDesc]').value,
+        gsm:            form.querySelector('[name=gsm]').value,
+        region:         form.querySelector('[name=region]').value,
+        bloodGroup:     form.querySelector('[name=bloodGroup]').value,
+        unitId:         parseInt(form.querySelector('[name=unitId]').value) || 0,
+        typeId:         parseInt(form.querySelector('[name=typeId]').value) || 1,
+        employeeStatus: parseInt(form.querySelector('[name=employeeStatus]').value) || 0,
+        nicExpire:      form.querySelector('[name=nicExpire]').value || null,
+        passportExpire: form.querySelector('[name=passportExpire]').value || null,
+        dateOfBirth:    form.querySelector('[name=dateOfBirth]').value || null,
+    };
 
     const btn = form.querySelector('button[type=button]');
     btn.disabled = true; btn.textContent = '⏳ جاري الحفظ...';
 
-    const r = await postJson('/Pilgrims/ManualCreate', obj);
-    const d = await r.json();
+    const r = await fetch('/Pilgrims/ManualCreate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('[name=__RequestVerificationToken]')?.value ?? ''
+        },
+        body: JSON.stringify(obj)
+    });
+
+    let d;
+    try { d = await r.json(); } catch { d = await r.text(); }
 
     if(r.ok){
         showToast(d.message || 'تمت الإضافة بنجاح');
         setTimeout(()=> window.location='/Pilgrims', 1500);
     } else {
-        showToast(typeof d==='string'?d:(d.title||'حدث خطأ'), false);
+        showToast(typeof d==='string'?d:(d.title||d||'حدث خطأ'), false);
         btn.disabled=false; btn.textContent='💾 حفظ الحاج';
     }
 }
