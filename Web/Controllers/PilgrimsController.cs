@@ -171,8 +171,17 @@ public class PilgrimsController : BaseController
     [HttpPost]
     public async Task<IActionResult> ManualCreate([FromBody] Pilgrim pilgrim)
     {
-        var result = await _pilgrimService.RegisterFromHrmsAsync(pilgrim);
-        return ServiceResult(result, new { message = "تمت الإضافة بنجاح", id = result.Value?.PilgrimId });
+        try
+        {
+            var result = await _pilgrimService.RegisterFromHrmsAsync(pilgrim);
+            if (!result.Succeeded)
+                return BadRequest(result.Error);
+            return Ok(new { message = "تمت الإضافة بنجاح", id = result.Value?.PilgrimId });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"فشل الحفظ: {ex.Message}");
+        }
     }
 
 }
