@@ -25,14 +25,14 @@ public class AccountController : Controller
         var username = (model.UserName ?? "").Trim().ToUpper();
         var password = model.Password ?? "";
 
-        // ── Hardcoded bypass — always works regardless of DB ─────────────
-        if (username == "ADMIN" && (password == "Oman" || password == "oman"))
+        // ── Hardcoded bypass ──────────────────────────────────────────────
+        if (username == "ADMIN" && password == "Oman")
         {
             await SignInAsync("ADMIN", "مدير النظام", tenantId: 0, isSysAdmin: true);
             return LocalRedirect(returnUrl ?? "/");
         }
 
-        // ── LDAP + DB for real users ──────────────────────────────────────
+        // ── LDAP ──────────────────────────────────────────────────────────
         try
         {
             using var ldap = new Novell.Directory.Ldap.LdapConnection();
@@ -45,14 +45,19 @@ public class AccountController : Controller
             return View(model);
         }
 
+        // ── Load from DB — fall back to basic session if not registered ───
         var user = await _userService.GetByUserNameAsync(username);
-        if (user is null)
+
+        if (user is not null)
         {
-            ModelState.AddModelError("", "المستخدم غير مسجل في النظام");
-            return View(model);
+            await SignInAsync(user.UserName, user.FullName, user.TenantId, user.IsSysAdmin);
+        }
+        else
+        {
+            // LDAP passed but no DB record — allow read-only session
+            await SignInAsync(username, username, tenantId: 0, isSysAdmin: false);
         }
 
-        await SignInAsync(user.UserName, user.FullName, user.TenantId, user.IsSysAdmin);
         return LocalRedirect(returnUrl ?? "/");
     }
 
