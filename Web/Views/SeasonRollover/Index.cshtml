@@ -1,0 +1,93 @@
+@{ ViewData["Title"] = "ترحيل الموسم"; }
+
+<div class="page-card">
+    <div class="page-title">📅 ترحيل الموسم</div>
+
+    <div class="row g-4">
+        <!-- Current season stats -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white fw-bold">إحصائيات الموسم الحالي</div>
+                <div class="card-body" id="currentStats">
+                    <div class="text-center text-muted">جاري التحميل...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rollover form -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark fw-bold">⚠️ ترحيل موسم جديد</div>
+                <div class="card-body">
+                    <p class="text-muted small">يؤدي ترحيل الموسم إلى إغلاق الموسم الحالي وفتح موسم حج جديد. تأكد من اكتمال جميع الإجراءات قبل المتابعة.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">سنة الموسم الجديد</label>
+                        <input type="number" id="newYear" class="form-control" placeholder="مثال: 1447" min="1440" max="1500"/>
+                    </div>
+                    <button class="btn btn-danger w-100" onclick="doRollover()">🔄 ترحيل الموسم</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white fw-bold">سجل المواسم السابقة</div>
+                <div class="card-body p-0">
+                    <table id="historyTable" class="table table-sm mb-0">
+                        <thead class="table-secondary">
+                            <tr><th>السنة</th><th>إجمالي الحجاج</th><th>المؤكدون</th><th>الملغون</th><th>تاريخ الإغلاق</th></tr>
+                        </thead>
+                        <tbody id="historyBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+async function loadStats(){
+    const r = await fetch('/SeasonRollover/Stats');
+    const d = await r.json();
+    document.getElementById('currentStats').innerHTML=`
+        <div class="row text-center">
+            <div class="col-6 mb-3"><div class="num fs-3 fw-bold text-primary">${d.totalPilgrims??0}</div><div class="small text-muted">إجمالي الحجاج</div></div>
+            <div class="col-6 mb-3"><div class="num fs-3 fw-bold text-success">${d.confirmed??0}</div><div class="small text-muted">مؤكدون</div></div>
+            <div class="col-6"><div class="num fs-3 fw-bold text-danger">${d.cancelled??0}</div><div class="small text-muted">ملغون</div></div>
+            <div class="col-6"><div class="num fs-3 fw-bold text-warning">${d.pending??0}</div><div class="small text-muted">معلقون</div></div>
+        </div>
+        <div class="mt-2 text-center">
+            ${(d.pending??0)>0?'<div class="alert alert-warning py-1 small mb-0">⚠️ يوجد سجلات معلقة — لا يمكن الترحيل</div>':'<div class="alert alert-success py-1 small mb-0">✅ يمكن الترحيل</div>'}
+        </div>`;
+}
+
+async function loadHistory(){
+    const r = await fetch('/SeasonRollover/History');
+    const data = await r.json();
+    const tbody = document.getElementById('historyBody');
+    tbody.innerHTML = data.map(s=>`
+        <tr>
+            <td><strong>${s.hajjYear}</strong></td>
+            <td>${s.totalPilgrims??0}</td>
+            <td><span class="badge bg-success">${s.confirmed??0}</span></td>
+            <td><span class="badge bg-danger">${s.cancelled??0}</span></td>
+            <td>${s.closedOn??'—'}</td>
+        </tr>`).join('');
+}
+
+loadStats();
+loadHistory();
+
+async function doRollover(){
+    const y = document.getElementById('newYear').value;
+    if(!y){ showToast('أدخل سنة الموسم الجديد',false); return; }
+    if(!confirm(`هل أنت متأكد من ترحيل الموسم إلى ${y}؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+    const r = await postForm('/SeasonRollover/Rollover',{newYear:y});
+    const d = await r.json();
+    if(r.ok){ showToast(d.message); loadStats(); loadHistory(); }
+    else showToast(d,false);
+}
+</script>
+}

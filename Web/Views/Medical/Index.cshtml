@@ -1,0 +1,122 @@
+@{ ViewData["Title"] = "الفحص الطبي"; }
+
+<div class="page-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="page-title mb-0">🏥 الفحص الطبي</div>
+        <button class="btn btn-success btn-sm" onclick="bulkFit()">تأهيل المحددين</button>
+    </div>
+
+    <div class="row g-3 mb-4" id="medStatsRow"></div>
+
+    <table id="medTable" class="table table-hover table-sm w-100">
+        <thead class="table-dark">
+            <tr>
+                <th><input type="checkbox" id="selectAll"/></th>
+                <th>الاسم</th><th>الرقم العسكري</th><th>الرتبة</th>
+                <th>فصيلة الدم</th><th>تاريخ التطعيم</th><th>نتيجة الفحص</th><th>إجراء</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- Update Modal -->
+<div class="modal fade" id="medModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">تحديث الفحص الطبي</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="medId"/>
+                <div class="mb-3">
+                    <label class="form-label">نتيجة الفحص</label>
+                    <select id="fitResult" class="form-select">
+                        <option value="0">معلق</option>
+                        <option value="1">مؤهل</option>
+                        <option value="2">مؤهل مشروط</option>
+                        <option value="3">غير مؤهل</option>
+                        <option value="4">مؤهل من الطبيب</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">تاريخ التطعيم</label>
+                    <input type="date" id="injDate" class="form-control"/>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">ملاحظة الطبيب</label>
+                    <textarea id="docNote" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button class="btn btn-primary" onclick="saveMed()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const fitMap = {0:'معلق',1:'مؤهل',2:'مشروط',3:'غير مؤهل',4:'مؤهل(طبيب)'};
+const fitClr = {0:'secondary',1:'success',2:'warning',3:'danger',4:'info'};
+
+let table = $('#medTable').DataTable({
+    ajax:{ url:'/Medical/Read', dataSrc:'' },
+    columns:[
+        {data:null, render:(d,t,r)=>`<input type="checkbox" class="row-check" value="${r.pilgrimId}"/>`},
+        {data:'fullName'},
+        {data:'serviceNumber'},
+        {data:'rankDesc'},
+        {data:'bloodGroup'},
+        {data:'injectionDate'},
+        {data:'fitResult', render:v=>`<span class="badge bg-${fitClr[v]??'secondary'}">${fitMap[v]??v}</span>`},
+        {data:'pilgrimId', render:(id,t,r)=>`<button class="btn btn-sm btn-primary" onclick="openMed(${id},${r.fitResult},'${r.injectionDate}','${r.doctorNote??''}')">تحديث</button>`}
+    ],
+    language:{url:'//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json'},
+    pageLength:25
+});
+
+$('#selectAll').on('change',function(){ document.querySelectorAll('.row-check').forEach(c=>c.checked=this.checked); });
+
+async function loadStats(){
+    const r = await fetch('/Medical/MedicalStats');
+    const d = await r.json();
+    document.getElementById('medStatsRow').innerHTML=`
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num">${d.total}</div><div class="lbl">الكلي</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-warning">${d.pending}</div><div class="lbl">معلق</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-success">${d.fit}</div><div class="lbl">مؤهل</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-warning">${d.conditionally}</div><div class="lbl">مشروط</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-danger">${d.notFit}</div><div class="lbl">غير مؤهل</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-info">${d.vaccinated}</div><div class="lbl">ملقح</div></div></div>`;
+}
+loadStats();
+
+function openMed(id,fit,inj,note){
+    document.getElementById('medId').value=id;
+    document.getElementById('fitResult').value=fit;
+    document.getElementById('injDate').value=inj;
+    document.getElementById('docNote').value=note;
+    new bootstrap.Modal(document.getElementById('medModal')).show();
+}
+
+async function saveMed(){
+    const data = {
+        pilgrimId:   document.getElementById('medId').value,
+        fitResult:   document.getElementById('fitResult').value,
+        injectionDate: document.getElementById('injDate').value,
+        doctorNote:  document.getElementById('docNote').value
+    };
+    const r = await postForm('/Medical/Update', data);
+    const d = await r.json();
+    if(r.ok){ showToast(d.message); bootstrap.Modal.getInstance(document.getElementById('medModal')).hide(); table.ajax.reload(); loadStats(); }
+    else showToast(d,false);
+}
+
+async function bulkFit(){
+    const ids = [...document.querySelectorAll('.row-check:checked')].map(c=>+c.value);
+    if(!ids.length){ showToast('اختر حجاجاً أولاً',false); return; }
+    const r = await postJson('/Medical/BulkMarkFit',ids);
+    const d = await r.json();
+    if(r.ok){ showToast(d.message); table.ajax.reload(); loadStats(); }
+    else showToast(d,false);
+}
+</script>
+}

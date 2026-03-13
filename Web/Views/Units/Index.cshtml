@@ -1,0 +1,115 @@
+@{ ViewData["Title"] = "الوحدات"; }
+
+<div class="page-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="page-title mb-0">🏢 إدارة الوحدات</div>
+        <button class="btn btn-primary btn-sm" onclick="openCreate()">+ إضافة وحدة</button>
+    </div>
+
+    <table id="unitsTable" class="table table-hover table-sm w-100">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th><th>اسم الوحدة</th><th>الكود</th>
+                <th>الحصة</th><th>المسجلون</th><th>المتبقي</th><th>إجراء</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal fade" id="unitModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="unitModalTitle">إضافة وحدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="unitId"/>
+                <div class="mb-3">
+                    <label class="form-label">اسم الوحدة (عربي)</label>
+                    <input id="unitNameAr" class="form-control"/>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">اسم الوحدة (إنجليزي)</label>
+                    <input id="unitNameEn" class="form-control"/>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">كود الوحدة</label>
+                    <input id="unitCode" type="number" class="form-control"/>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">الحصة</label>
+                    <input id="unitQuota" type="number" class="form-control"/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button class="btn btn-primary" onclick="saveUnit()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let isEdit = false;
+
+let table = $('#unitsTable').DataTable({
+    ajax:{ url:'/Units/Read', dataSrc:'' },
+    columns:[
+        {data:'unitId'},
+        {data:'unitNameAr'},
+        {data:'unitCode'},
+        {data:'quota'},
+        {data:'used'},
+        {data:null, render:(d,t,r)=>`<span class="${r.quota-r.used<=0?'text-danger fw-bold':''}">${Math.max(0,r.quota-r.used)}</span>`},
+        {data:'unitId', render:(id,t,r)=>`
+            <button class="btn btn-sm btn-warning me-1" onclick="openEdit(${JSON.stringify(r).replace(/"/g,'&quot;')})">تعديل</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteUnit(${id})">حذف</button>`}
+    ],
+    language:{url:'//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json'},
+    pageLength:25
+});
+
+function openCreate(){
+    isEdit=false;
+    document.getElementById('unitModalTitle').textContent='إضافة وحدة';
+    ['unitId','unitNameAr','unitNameEn','unitCode','unitQuota'].forEach(id=>document.getElementById(id).value='');
+    new bootstrap.Modal(document.getElementById('unitModal')).show();
+}
+
+function openEdit(r){
+    isEdit=true;
+    document.getElementById('unitModalTitle').textContent='تعديل وحدة';
+    document.getElementById('unitId').value=r.unitId;
+    document.getElementById('unitNameAr').value=r.unitNameAr||'';
+    document.getElementById('unitNameEn').value=r.unitNameEn||'';
+    document.getElementById('unitCode').value=r.unitCode||0;
+    document.getElementById('unitQuota').value=r.quota||0;
+    new bootstrap.Modal(document.getElementById('unitModal')).show();
+}
+
+async function saveUnit(){
+    const obj={
+        unitId:   +document.getElementById('unitId').value||0,
+        unitNameAr: document.getElementById('unitNameAr').value,
+        unitNameEn: document.getElementById('unitNameEn').value,
+        unitCode: +document.getElementById('unitCode').value,
+        quota:    +document.getElementById('unitQuota').value
+    };
+    const url = isEdit ? '/Units/Update' : '/Units/Create';
+    const r = await postJson(url, obj);
+    const d = await r.json();
+    if(r.ok){ showToast(d.message||'تم الحفظ'); bootstrap.Modal.getInstance(document.getElementById('unitModal')).hide(); table.ajax.reload(); }
+    else showToast(d,false);
+}
+
+async function deleteUnit(id){
+    if(!confirm('هل تريد حذف هذه الوحدة؟')) return;
+    const r = await postForm('/Units/Delete',{unitId:id});
+    if(r.ok){ showToast('تم الحذف'); table.ajax.reload(); }
+    else showToast(await r.text(),false);
+}
+</script>
+}

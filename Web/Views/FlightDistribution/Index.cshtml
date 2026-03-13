@@ -1,0 +1,94 @@
+@{ ViewData["Title"] = "توزيع الرحلات"; }
+
+<div class="page-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="page-title mb-0">✈️ توزيع الحجاج على الرحلات</div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary btn-sm" onclick="autoDistribute()">توزيع تلقائي</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAll()">مسح الكل</button>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" id="flightTabs">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#eligible">المؤهلون للسفر</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#distribution">التوزيع الحالي</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="eligible">
+            <table id="eligibleTable" class="table table-hover table-sm w-100">
+                <thead class="table-dark">
+                    <tr>
+                        <th>الاسم</th><th>الرقم العسكري</th><th>الرتبة</th>
+                        <th>الوحدة</th><th>فصيلة الدم</th><th>النوع</th><th>الحالة</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <div class="tab-pane fade" id="distribution">
+            <table id="distTable" class="table table-hover table-sm w-100">
+                <thead class="table-dark">
+                    <tr>
+                        <th>الاسم</th><th>الرتبة</th><th>الوحدة</th>
+                        <th>رقم الرحلة</th><th>الاتجاه</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const dirMap = {1:'ذهاب',2:'عودة'};
+const typeMap = {1:'أصيل',2:'احتياطي',3:'إداري'};
+
+let eligTable = $('#eligibleTable').DataTable({
+    ajax:{ url:'/FlightDistribution/GetEligible', dataSrc:'' },
+    columns:[
+        {data:'fullName'},
+        {data:'serviceNumber'},
+        {data:'rankDesc'},
+        {data:'unitNameAr'},
+        {data:'bloodGroup'},
+        {data:'typeId', render:v=>typeMap[v]??v},
+        {data:'alreadyAssigned', render:v=>v?'<span class="badge bg-success">موزع</span>':'<span class="badge bg-warning">لم يوزع</span>'}
+    ],
+    language:{url:'//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json'},
+    pageLength:25
+});
+
+let distTable = $('#distTable').DataTable({
+    ajax:{ url:'/FlightDistribution/GetDistribution', dataSrc:'' },
+    columns:[
+        {data:'name'},
+        {data:'rank'},
+        {data:'unit'},
+        {data:'flightNo'},
+        {data:'direction', render:v=>dirMap[v]??v}
+    ],
+    language:{url:'//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json'},
+    pageLength:25
+});
+
+document.getElementById('flightTabs').addEventListener('shown.bs.tab', e=>{
+    if(e.target.getAttribute('href')==='#distribution') distTable.ajax.reload();
+});
+
+async function autoDistribute(){
+    if(!confirm('هل تريد تشغيل التوزيع التلقائي؟')) return;
+    const r = await postForm('/FlightDistribution/AutoDistribute',{});
+    const d = await r.json();
+    if(r.ok){ showToast(d.message); eligTable.ajax.reload(); distTable.ajax.reload(); }
+    else showToast(d,false);
+}
+
+async function clearAll(){
+    if(!confirm('هل تريد مسح جميع التوزيعات؟')) return;
+    const r = await postForm('/FlightDistribution/ClearAll',{});
+    const d = await r.json();
+    if(r.ok){ showToast(d.message); eligTable.ajax.reload(); distTable.ajax.reload(); }
+    else showToast(d,false);
+}
+</script>
+}

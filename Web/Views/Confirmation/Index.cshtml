@@ -1,0 +1,123 @@
+@{ ViewData["Title"] = "التأكيد"; }
+
+<div class="page-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="page-title mb-0">✅ تأكيد الحجاج</div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm" onclick="confirmSelected()">تأكيد المحددين</button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4" id="summaryRow"></div>
+
+    <table id="confirmTable" class="table table-hover table-sm w-100">
+        <thead class="table-dark">
+            <tr>
+                <th><input type="checkbox" id="selectAll"/></th>
+                <th>الاسم</th><th>الرقم العسكري</th><th>الرقم المدني</th>
+                <th>الجواز</th><th>انتهاء الجواز</th><th>النوع</th><th>الحالة</th><th>إجراء</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">إلغاء التسجيل</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="cancelId"/>
+                <label class="form-label">سبب الإلغاء</label>
+                <textarea id="cancelNote" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button class="btn btn-danger" onclick="doCancel()">تأكيد الإلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const confirmMap = {0:'معلق',1:'مؤكد',2:'ملغي',3:'معتمد مركزي',77:'محظور'};
+const confirmClr = {0:'secondary',1:'success',2:'danger',3:'primary',77:'dark'};
+const typeMap    = {1:'أصيل',2:'احتياطي',3:'إداري'};
+
+let table = $('#confirmTable').DataTable({
+    ajax:{ url:'/Confirmation/Read', dataSrc:'' },
+    columns:[
+        {data:null, render:(d,t,r)=>`<input type="checkbox" class="row-check" value="${r.pilgrimId}"/>`},
+        {data:'fullName'},
+        {data:'serviceNumber'},
+        {data:'nic'},
+        {data:'passport'},
+        {data:'passportExpire'},
+        {data:'typeId',      render:v=>typeMap[v]??v},
+        {data:'confirmCode', render:v=>`<span class="badge bg-${confirmClr[v]??'secondary'}">${confirmMap[v]??v}</span>`},
+        {data:'pilgrimId', render:(id,t,r)=>{
+            let btns='';
+            if(r.confirmCode==0) btns+=`<button class="btn btn-xs btn-success me-1" onclick="confirmOne(${id})">تأكيد</button>`;
+            if(r.confirmCode==1) btns+=`<button class="btn btn-xs btn-danger me-1" onclick="openCancel(${id})">إلغاء</button>`;
+            if(r.confirmCode==2) btns+=`<button class="btn btn-xs btn-warning" onclick="restoreOne(${id})">استعادة</button>`;
+            return btns||'—';
+        }}
+    ],
+    language:{url:'//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json'},
+    pageLength:25, order:[[1,'asc']]
+});
+
+$('#selectAll').on('change',function(){
+    document.querySelectorAll('.row-check').forEach(c=>c.checked=this.checked);
+});
+
+async function loadSummary(){
+    const r = await fetch('/Confirmation/Summary');
+    const d = await r.json();
+    document.getElementById('summaryRow').innerHTML=`
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num">${d.total}</div><div class="lbl">الكلي</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-warning">${d.pending}</div><div class="lbl">معلق</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-success">${d.confirmed}</div><div class="lbl">مؤكد</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-danger">${d.cancelled}</div><div class="lbl">ملغي</div></div></div>
+        <div class="col-6 col-md-2"><div class="stat-card"><div class="num text-danger">${d.passportIssues}</div><div class="lbl">جواز منتهي</div></div></div>`;
+}
+loadSummary();
+
+async function confirmOne(id){
+    const r = await postForm('/Confirmation/Confirm',{pilgrimId:id});
+    const d = await r.json();
+    if(r.ok){ showToast(d.message); table.ajax.reload(); loadSummary(); }
+    else showToast(d,false);
+}
+
+async function confirmSelected(){
+    const ids = [...document.querySelectorAll('.row-check:checked')].map(c=>+c.value);
+    if(!ids.length){ showToast('اختر حجاجاً أولاً',false); return; }
+    const r = await postJson('/Confirmation/ConfirmBulk',ids);
+    const d = await r.json();
+    if(r.ok){ showToast(d.message); table.ajax.reload(); loadSummary(); }
+    else showToast(d,false);
+}
+
+function openCancel(id){
+    document.getElementById('cancelId').value=id;
+    document.getElementById('cancelNote').value='';
+    new bootstrap.Modal(document.getElementById('cancelModal')).show();
+}
+
+async function doCancel(){
+    const id   = document.getElementById('cancelId').value;
+    const note = document.getElementById('cancelNote').value;
+    const r = await postForm('/Confirmation/Cancel',{pilgrimId:id, cancelNote:note});
+    if(r.ok){ showToast('تم الإلغاء'); bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide(); table.ajax.reload(); loadSummary(); }
+    else showToast(await r.text(),false);
+}
+
+async function restoreOne(id){
+    const r = await postForm('/Confirmation/Restore',{pilgrimId:id});
+    if(r.ok){ showToast('تمت الاستعادة'); table.ajax.reload(); loadSummary(); }
+    else showToast(await r.text(),false);
+}
+</script>
+}
