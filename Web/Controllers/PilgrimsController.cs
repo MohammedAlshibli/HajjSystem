@@ -21,16 +21,23 @@ public class PilgrimsController : BaseController
     private readonly IHrmsService    _hrmsService;
     private readonly HajjSettings    _settings;
 
+    private readonly HajjSystem.Application.Common.Interfaces.IUnitOfWork _uow;
+    private readonly HajjSystem.Application.Common.Interfaces.IRepository<HajjSystem.Domain.Entities.Pilgrim> _pilgrimRepo;
+
     public PilgrimsController(
         IPilgrimService pilgrimService,
         IUnitService    unitService,
         IHrmsService    hrmsService,
-        IOptions<HajjSettings> settings)
+        IOptions<HajjSettings> settings,
+        HajjSystem.Application.Common.Interfaces.IUnitOfWork uow,
+        HajjSystem.Application.Common.Interfaces.IRepository<HajjSystem.Domain.Entities.Pilgrim> pilgrimRepo)
     {
         _pilgrimService = pilgrimService;
         _unitService    = unitService;
         _hrmsService    = hrmsService;
         _settings       = settings.Value;
+        _uow            = uow;
+        _pilgrimRepo    = pilgrimRepo;
     }
 
     // ── INDEX ─────────────────────────────────────────────────────────
@@ -175,12 +182,39 @@ public class PilgrimsController : BaseController
         if (pilgrim is null)
             return BadRequest("البيانات المرسلة فارغة");
 
+        if (string.IsNullOrWhiteSpace(pilgrim.FullName))
+            return BadRequest("الاسم مطلوب");
+
+        if (string.IsNullOrWhiteSpace(pilgrim.NIC))
+            return BadRequest("الرقم المدني مطلوب");
+
         try
         {
-            var result = await _pilgrimService.RegisterFromHrmsAsync(pilgrim);
-            if (!result.Succeeded)
-                return BadRequest(result.Error);
-            return Ok(new { message = "تمت الإضافة بنجاح", id = result.Value?.PilgrimId });
+            // Check duplicate NIC in same year
+            var year = _settings.ActiveHajjYear;
+            bool exists = await _pilgrimRepo.AnyAsync(
+                _pilgrimRepo.Query().Where(p => p.NIC == pilgrim.NIC && p.HajjYear == year));
+            if (exists)
+                return BadRequest("الموظف مسجل مسبقاً في هذا الموسم");
+
+            // Stamp and set defaults
+            pilgrim.TenantId         = CurrentUser.TenantId;
+            pilgrim.CreatedBy        = CurrentUser.UserName;
+            pilgrim.CreatedOn        = DateTime.Now;
+            pilgrim.IsDeleted        = false;
+            pilgrim.HajjYear         = year;
+            pilgrim.RegistrationDate = DateTime.Now;
+            pilgrim.FitResult        = HajjSystem.Domain.Constants.HajjConstants.FitResult.Pending;
+            pilgrim.ConfirmCode      = HajjSystem.Domain.Constants.HajjConstants.ConfirmCode.Pending;
+
+            if (string.IsNullOrEmpty(pilgrim.Passport)) pilgrim.Passport = "لايوجد";
+            if (string.IsNullOrEmpty(pilgrim.ServiceNumber)) pilgrim.ServiceNumber = pilgrim.NIC;
+            if (pilgrim.TypeId == 0) pilgrim.TypeId = HajjSystem.Domain.Constants.HajjConstants.PilgrimType.Regular;
+
+            _pilgrimRepo.Add(pilgrim);
+            await _uow.SaveChangesAsync();
+
+            return Ok(new { message = "تمت الإضافة بنجاح", id = pilgrim.PilgrimId });
         }
         catch (Exception ex)
         {
