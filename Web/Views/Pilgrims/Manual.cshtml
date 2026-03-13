@@ -1,6 +1,6 @@
 @{ ViewData["Title"] = "إضافة حاج يدوياً"; }
 @{
-    var units = ViewBag.Units as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var units = ViewBag.Units as IEnumerable<HajjSystem.Application.DTOs.UnitQuotaDto> ?? Enumerable.Empty<HajjSystem.Application.DTOs.UnitQuotaDto>();
 }
 
 <div class="page-card">
@@ -58,7 +58,7 @@
                     <option value="">-- اختر الوحدة --</option>
                     @foreach (var u in units)
                     {
-                        <option value="@u.unitId">@u.unitNameAr (متبقي: @Math.Max(0, u.quota - u.used))</option>
+                        <option value="@u.UnitId">@u.UnitNameAr (متبقي أصيل: @u.RegularRemain / احتياطي: @u.StandByRemain)</option>
                     }
                 </select>
             </div>
