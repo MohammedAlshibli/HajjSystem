@@ -22,6 +22,9 @@ public class UnitConfiguration : IEntityTypeConfiguration<Unit>
         b.Property(u => u.ModFlag).HasColumnName("mod_flag");
         b.Property(u => u.HajjYear).HasColumnName("hajj_year");
 
+        b.Property(u => u.TenantId).HasColumnName("tenant_id").IsRequired();
+        b.Property(u => u.IsDeleted).HasColumnName("is_deleted");
+
         b.HasIndex(u => u.UnitCode).IsUnique();
     }
 }

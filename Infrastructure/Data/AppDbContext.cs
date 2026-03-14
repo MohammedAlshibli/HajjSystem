@@ -54,5 +54,8 @@ public class AppDbContext : DbContext
 
         mb.Entity<User>().HasQueryFilter(u =>
             _isSysAdmin() || u.TenantId == _getTenantId());
+
+        mb.Entity<Unit>().HasQueryFilter(u =>
+            (_isSysAdmin() || u.TenantId == _getTenantId()) && !u.IsDeleted);
     }
 }
