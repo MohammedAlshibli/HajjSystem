@@ -4,7 +4,7 @@ namespace HajjSystem.Domain.Entities;
 
 public class Unit : BaseEntity
 {
-    public int      UnitId      { get; set; }
+    public int      Id          { get; set; }   // PK
     public int      UnitCode    { get; set; }
     public string   UnitNameAr  { get; set; } = string.Empty;
     public string   UnitNameEn  { get; set; } = string.Empty;

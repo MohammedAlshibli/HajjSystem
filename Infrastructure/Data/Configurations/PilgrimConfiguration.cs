@@ -13,6 +13,7 @@ public class PilgrimConfiguration : IEntityTypeConfiguration<Pilgrim>
         b.HasOne(p => p.Unit)
             .WithMany(u => u.Pilgrims)
             .HasForeignKey(p => p.UnitId)
+            .HasPrincipalKey(u => u.Id)
             .OnDelete(DeleteBehavior.SetNull);
 
         // TypeId stores the business Value (1=Regular,2=StandBy,3=Admin)

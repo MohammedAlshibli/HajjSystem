@@ -33,7 +33,7 @@ public class UnitsController : BaseController
         StampNew(unit);
         _unitSvc.Add(unit);
         await _uow.SaveChangesAsync();
-        return Ok(new { message = "تمت الإضافة", unitId = unit.UnitId });
+        return Ok(new { message = "تمت الإضافة", unitId = unit.Id });
     }
 
     [HttpPost]

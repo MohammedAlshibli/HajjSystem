@@ -54,7 +54,7 @@ public class UnitService : IUnitService
     private async Task<IEnumerable<UnitQuotaDto>> BuildQuotaDtos(IEnumerable<Unit> units)
     {
         int year    = _settings.ActiveHajjYear;
-        var unitIds = units.Select(u => u.UnitId).ToList();
+        var unitIds = units.Select(u => u.Id).ToList();
 
         // Load pilgrims then group in memory — avoids projected IQueryable<T> type mismatch
         var pilgrims = await _pilgrims.ToListAsync(
@@ -65,10 +65,10 @@ public class UnitService : IUnitService
 
         return units.Select(u =>
         {
-            int rUsed = pilgrims.Count(p => p.UnitId == u.UnitId && p.TypeId == HajjConstants.PilgrimType.Regular);
-            int sUsed = pilgrims.Count(p => p.UnitId == u.UnitId && p.TypeId == HajjConstants.PilgrimType.StandBy);
+            int rUsed = pilgrims.Count(p => p.UnitId == u.Id && p.TypeId == HajjConstants.PilgrimType.Regular);
+            int sUsed = pilgrims.Count(p => p.UnitId == u.Id && p.TypeId == HajjConstants.PilgrimType.StandBy);
             return new UnitQuotaDto(
-                u.UnitId, u.UnitNameAr, u.AllowNumber, u.StandBy,
+                u.Id, u.UnitNameAr, u.AllowNumber, u.StandBy,
                 rUsed, sUsed,
                 Math.Max(0, u.AllowNumber - rUsed),
                 Math.Max(0, u.StandBy    - sUsed),

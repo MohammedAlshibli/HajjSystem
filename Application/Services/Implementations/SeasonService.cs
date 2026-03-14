@@ -32,9 +32,9 @@ public class SeasonService : ISeasonService
         var units = await _units.ToListAsync(_units.Query());
 
         var unitBreakdown = units.Select(u => new UnitBreakdownDto(
-            u.UnitId, u.UnitNameAr, u.AllowNumber, u.StandBy,
-            pilgrims.Count(p => p.UnitId == u.UnitId),
-            pilgrims.Count(p => p.UnitId == u.UnitId && p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved)
+            u.Id, u.UnitNameAr, u.AllowNumber, u.StandBy,
+            pilgrims.Count(p => p.UnitId == u.Id),
+            pilgrims.Count(p => p.UnitId == u.Id && p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved)
         )).ToList();
 
         return new SeasonStatsDto(
