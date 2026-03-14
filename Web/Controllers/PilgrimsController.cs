@@ -56,7 +56,7 @@ public class PilgrimsController : BaseController
             .Select(p => new {
                 p.PilgrimId, p.FullName, p.ServiceNumber, p.NIC,
                 p.RankDesc, p.Region,
-                UnitNameAr = p.Unit != null ? p.Unit.UnitNameAr : "",
+                ArabicName = p.Unit != null ? p.Unit.ArabicName : "",
                 p.TypeId, p.FitResult, p.ConfirmCode
             })
             .ToListAsync();

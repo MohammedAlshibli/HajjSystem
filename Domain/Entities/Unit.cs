@@ -6,8 +6,8 @@ public class Unit : BaseEntity
 {
     public int      Id          { get; set; }   // PK
     public int      UnitCode    { get; set; }
-    public string   UnitNameAr  { get; set; } = string.Empty;
-    public string   UnitNameEn  { get; set; } = string.Empty;
+    public string   ArabicName  { get; set; } = string.Empty;
+    public string   EnglishName  { get; set; } = string.Empty;
     public bool     ModFlag     { get; set; }
     public DateTime HajjYear    { get; set; }
     public int      AllowNumber { get; set; }

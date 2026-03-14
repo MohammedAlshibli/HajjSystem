@@ -7,7 +7,7 @@ public record PilgrimDto(
     string   NIC,
     string   RankDesc,
     string?  Region,
-    string   UnitNameAr,
+    string   ArabicName,
     int      TypeId,
     int      FitResult,
     int      ConfirmCode,

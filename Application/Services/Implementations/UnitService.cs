@@ -68,7 +68,7 @@ public class UnitService : IUnitService
             int rUsed = pilgrims.Count(p => p.UnitId == u.Id && p.TypeId == HajjConstants.PilgrimType.Regular);
             int sUsed = pilgrims.Count(p => p.UnitId == u.Id && p.TypeId == HajjConstants.PilgrimType.StandBy);
             return new UnitQuotaDto(
-                u.Id, u.UnitNameAr, u.AllowNumber, u.StandBy,
+                u.Id, u.ArabicName, u.AllowNumber, u.StandBy,
                 rUsed, sUsed,
                 Math.Max(0, u.AllowNumber - rUsed),
                 Math.Max(0, u.StandBy    - sUsed),

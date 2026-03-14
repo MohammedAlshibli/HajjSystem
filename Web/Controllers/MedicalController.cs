@@ -37,7 +37,7 @@ public class MedicalController : BaseController
                 p.RankDesc, p.BloodGroup, p.FitResult, p.DoctorNote, p.TypeId,
                 InjectionDate  = p.InjectionDate != default ? p.InjectionDate.ToString("yyyy-MM-dd") : "",
                 PassportExpire = p.PassportExpire.HasValue ? p.PassportExpire.Value.ToString("yyyy-MM-dd") : "",
-                UnitNameAr     = p.Unit != null ? p.Unit.UnitNameAr : ""
+                ArabicName     = p.Unit != null ? p.Unit.ArabicName : ""
             }).ToListAsync();
         return Json(data);
     }

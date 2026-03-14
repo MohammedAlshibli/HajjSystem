@@ -2,7 +2,7 @@ namespace HajjSystem.Application.DTOs;
 
 public record UnitQuotaDto(
     int    UnitId,
-    string UnitNameAr,
+    string ArabicName,
     int    AllowNumber,
     int    StandBy,
     int    RegularUsed,

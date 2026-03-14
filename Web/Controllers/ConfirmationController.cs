@@ -39,7 +39,7 @@ public class ConfirmationController : BaseController
                 PassportExpire  = p.PassportExpire.HasValue ? p.PassportExpire.Value.ToString("yyyy-MM-dd") : "",
                 NICExpire       = p.NICExpire.HasValue ? p.NICExpire.Value.ToString("yyyy-MM-dd") : "",
                 p.FitResult, p.ConfirmCode, p.CancelNote, p.RegistrationDate,
-                UnitNameAr      = p.Unit != null ? p.Unit.UnitNameAr : "",
+                ArabicName      = p.Unit != null ? p.Unit.ArabicName : "",
                 TypeId          = p.TypeId
             }).ToListAsync();
         return Json(data);

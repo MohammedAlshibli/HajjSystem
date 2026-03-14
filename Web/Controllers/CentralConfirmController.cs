@@ -36,7 +36,7 @@ public class CentralConfirmController : BaseController
                 p.RankDesc, p.Region, p.Passport,
                 PassportExpire = p.PassportExpire.HasValue ? p.PassportExpire.Value.ToString("yyyy-MM-dd") : "",
                 p.FitResult, p.ConfirmCode, p.TypeId, p.BloodGroup, p.RegistrationDate,
-                UnitNameAr = p.Unit != null ? p.Unit.UnitNameAr : "",
+                ArabicName = p.Unit != null ? p.Unit.ArabicName : "",
                 UnitId     = p.UnitId ?? 0
             }).ToListAsync();
         return Json(data);
@@ -50,12 +50,12 @@ public class CentralConfirmController : BaseController
             .Include(p => p.Unit)
             .Where(p => p.HajjYear == year)
             .Select(p => new { p.ConfirmCode, p.FitResult, p.PassportExpire,
-                               UnitNameAr = p.Unit != null ? p.Unit.UnitNameAr : "غير محدد",
+                               ArabicName = p.Unit != null ? p.Unit.ArabicName : "غير محدد",
                                p.TypeId })
             .ToListAsync();
 
         var byUnit = all.Where(p => p.ConfirmCode == HajjConstants.ConfirmCode.Confirmed)
-            .GroupBy(p => p.UnitNameAr)
+            .GroupBy(p => p.ArabicName)
             .Select(g => new {
                 unit     = g.Key,
                 count    = g.Count(),

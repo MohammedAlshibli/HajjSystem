@@ -44,7 +44,7 @@ public class FlightDistributionController : BaseController
                          p.ConfirmCode == HajjConstants.ConfirmCode.HQApproved)
             .Select(p => new {
                 p.PilgrimId, p.FullName, p.ServiceNumber, p.RankDesc, p.TypeId,
-                UnitNameAr      = p.Unit != null ? p.Unit.UnitNameAr : "",
+                ArabicName      = p.Unit != null ? p.Unit.ArabicName : "",
                 p.BloodGroup,
                 IsAdmin         = p.TypeId == HajjConstants.PilgrimType.Admin,
                 AlreadyAssigned = assigned.Contains(p.PilgrimId)
@@ -63,7 +63,7 @@ public class FlightDistributionController : BaseController
                 p.PassengerId, p.PilgrimId,
                 Name    = p.Pilgrim!.FullName,
                 Rank    = p.Pilgrim.RankDesc,
-                Unit    = p.Pilgrim.Unit != null ? p.Pilgrim.Unit.UnitNameAr : "",
+                Unit    = p.Pilgrim.Unit != null ? p.Pilgrim.Unit.ArabicName : "",
                 IsAdmin = p.Pilgrim.TypeId == HajjConstants.PilgrimType.Admin,
                 p.FlightId,
                 FlightNo  = p.Flight!.FlightNo,

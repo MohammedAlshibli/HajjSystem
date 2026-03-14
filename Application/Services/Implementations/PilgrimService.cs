@@ -98,7 +98,7 @@ public class PilgrimService : IPilgrimService
             return new BanCheckDto(false, 0, string.Empty, string.Empty);
 
         var unit = await _units.GetByIdAsync(banned.UnitId ?? 0);
-        string unitName = unit?.UnitNameAr ?? "—";
+        string unitName = unit?.ArabicName ?? "—";
 
         return new BanCheckDto(true, banned.HajjYear, unitName,
             $"أدّى الحج عام {banned.HajjYear} — لا يُسمح بالتسجيل مرة ثانية");
