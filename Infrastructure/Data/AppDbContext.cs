@@ -17,12 +17,6 @@ public class AppDbContext : DbContext
         _isSysAdmin  = isSysAdmin  ?? (() => true);
     }
 
-    // Parameterless constructor for migrations / tooling
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-        _getTenantId = () => 0;
-        _isSysAdmin  = () => true;
-    }
 
     // ── DbSets ────────────────────────────────────────────────────────
     public DbSet<Pilgrim>    Pilgrims    { get; set; }
