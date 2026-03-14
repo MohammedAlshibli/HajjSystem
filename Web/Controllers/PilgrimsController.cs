@@ -154,7 +154,7 @@ public class PilgrimsController : BaseController
             HrmsUnitCode    = int.TryParse(dto.UNIT, out var uc) ? uc : 0,
             HrmsUnitDesc    = dto.uniT_ARABIC,
             Unit            = unit,
-            UnitId          = unit?.UnitId,
+            UnitId          = unit?.Id,
             Region          = dto.REGION_A,
             WilayaCode      = dto.WIL_CODE == "-" ? 0 : int.TryParse(dto.WIL_CODE, out var wc) ? wc : 0,
             WilayaDesc      = dto.WIL_ARABIC,
