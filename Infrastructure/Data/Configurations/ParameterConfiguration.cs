@@ -20,7 +20,8 @@ public class ParameterConfiguration : IEntityTypeConfiguration<Parameter>
         b.Property(p => p.DescArabic).HasMaxLength(100);
         b.Property(p => p.DescEnglish).HasMaxLength(100);
 
-        // Unique: same type cannot have duplicate values
+        // Unique index on Value — required for HasPrincipalKey FK references
+        b.HasIndex(p => p.Value).IsUnique();
         b.HasIndex(p => new { p.Type, p.Value }).IsUnique();
 
         // ── Seed ─────────────────────────────────────────────────────
