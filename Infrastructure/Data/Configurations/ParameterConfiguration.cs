@@ -1,5 +1,6 @@
 using HajjSystem.Domain.Constants;
 using HajjSystem.Domain.Entities;
+using HajjSystem.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -9,51 +10,57 @@ public class ParameterConfiguration : IEntityTypeConfiguration<Parameter>
 {
     public void Configure(EntityTypeBuilder<Parameter> b)
     {
-        b.HasKey(p => p.ParameterId);
+        b.HasKey(p => p.Id);
 
-        b.Property(p => p.Code).IsRequired().HasMaxLength(50);
+        b.Property(p => p.Type)
+            .HasConversion<string>()   // stores "ClassType", "FitCode" etc. — readable in DB
+            .HasMaxLength(30)
+            .IsRequired();
+
         b.Property(p => p.DescArabic).HasMaxLength(100);
         b.Property(p => p.DescEnglish).HasMaxLength(100);
 
-        // ── Seed required lookup data ─────────────────────────────────
+        // Unique: same type cannot have duplicate values
+        b.HasIndex(p => new { p.Type, p.Value }).IsUnique();
+
+        // ── Seed ─────────────────────────────────────────────────────
         b.HasData(
 
-            // Pilgrim Type
-            Seed(HajjConstants.PilgrimType.Regular, HajjConstants.ParamCode.ClassType, "أصيل",           "Regular"),
-            Seed(HajjConstants.PilgrimType.StandBy, HajjConstants.ParamCode.ClassType, "احتياطي",         "StandBy"),
-            Seed(HajjConstants.PilgrimType.Admin,   HajjConstants.ParamCode.ClassType, "إداري",           "Admin"),
+            // ClassType (discriminator = ParameterType.ClassType)
+            Row(1,  ParameterType.ClassType,       HajjConstants.PilgrimType.Regular,          "أصيل",            "Regular"),
+            Row(2,  ParameterType.ClassType,       HajjConstants.PilgrimType.StandBy,          "احتياطي",          "StandBy"),
+            Row(3,  ParameterType.ClassType,       HajjConstants.PilgrimType.Admin,            "إداري",            "Admin"),
 
-            // Fit Result
-            Seed(HajjConstants.FitResult.Pending,          HajjConstants.ParamCode.FitCode, "معلق",            "Pending"),
-            Seed(HajjConstants.FitResult.Fit,              HajjConstants.ParamCode.FitCode, "مؤهل",            "Fit"),
-            Seed(HajjConstants.FitResult.ConditionallyFit, HajjConstants.ParamCode.FitCode, "مؤهل مشروط",      "Conditionally Fit"),
-            Seed(HajjConstants.FitResult.NotFit,           HajjConstants.ParamCode.FitCode, "غير مؤهل",        "Not Fit"),
-            Seed(HajjConstants.FitResult.DoctorApproved,   HajjConstants.ParamCode.FitCode, "مؤهل من الطبيب",  "Doctor Approved"),
+            // FitCode
+            Row(4,  ParameterType.FitCode,         HajjConstants.FitResult.Pending,            "معلق",             "Pending"),
+            Row(5,  ParameterType.FitCode,         HajjConstants.FitResult.Fit,                "مؤهل",             "Fit"),
+            Row(6,  ParameterType.FitCode,         HajjConstants.FitResult.ConditionallyFit,   "مؤهل مشروط",       "Conditionally Fit"),
+            Row(7,  ParameterType.FitCode,         HajjConstants.FitResult.NotFit,             "غير مؤهل",         "Not Fit"),
+            Row(8,  ParameterType.FitCode,         HajjConstants.FitResult.DoctorApproved,     "مؤهل من الطبيب",   "Doctor Approved"),
 
-            // Flight Direction
-            Seed(HajjConstants.FlightDirection.Departure, "FlightDirection", "ذهاب", "Departure"),
-            Seed(HajjConstants.FlightDirection.Return,    "FlightDirection", "عودة", "Return"),
+            // ConfirmCode
+            Row(9,  ParameterType.ConfirmCode,     HajjConstants.ConfirmCode.Pending,          "معلق",             "Pending"),
+            Row(10, ParameterType.ConfirmCode,     HajjConstants.ConfirmCode.Confirmed,        "مؤكد",             "Confirmed"),
+            Row(11, ParameterType.ConfirmCode,     HajjConstants.ConfirmCode.Cancelled,        "ملغي",             "Cancelled"),
+            Row(12, ParameterType.ConfirmCode,     HajjConstants.ConfirmCode.HQApproved,       "معتمد مركزي",      "HQ Approved"),
 
-            // Confirm Code
-            Seed(HajjConstants.ConfirmCode.Pending,    HajjConstants.ParamCode.ConfirmCode, "معلق",          "Pending"),
-            Seed(HajjConstants.ConfirmCode.Confirmed,  HajjConstants.ParamCode.ConfirmCode, "مؤكد",          "Confirmed"),
-            Seed(HajjConstants.ConfirmCode.Cancelled,  HajjConstants.ParamCode.ConfirmCode, "ملغي",          "Cancelled"),
-            Seed(HajjConstants.ConfirmCode.HQApproved, HajjConstants.ParamCode.ConfirmCode, "معتمد مركزي",   "HQ Approved")
+            // FlightDirection
+            Row(13, ParameterType.FlightDirection, HajjConstants.FlightDirection.Departure,    "ذهاب",             "Departure"),
+            Row(14, ParameterType.FlightDirection, HajjConstants.FlightDirection.Return,       "عودة",             "Return")
         );
     }
 
-    /// <summary>Helper — creates a Parameter seed row with standard audit defaults.</summary>
-    private static Parameter Seed(int id, string code, string ar, string en) => new()
+    private static Parameter Row(int id, ParameterType type, int value, string ar, string en) => new()
     {
-        ParameterId  = id,
-        Code         = code,
-        DescArabic   = ar,
-        DescEnglish  = en,
-        Value        = id,
-        // BaseEntity audit fields must have fixed values for seeding
-        TenantId     = 0,
-        IsDeleted    = false,
-        CreatedBy    = "SYSTEM",
-        CreatedOn    = new DateTime(2024, 1, 1)
+        Id          = id,
+        Type        = type,
+        Value       = value,
+        DescArabic  = ar,
+        DescEnglish = en,
+        IsActive    = true,
+        TenantId    = 0,
+        IsDeleted   = false,
+        CreatedBy   = "SYSTEM",
+        CreatedOn   = new DateTime(2024, 1, 1)
     };
 }

@@ -15,9 +15,13 @@ public class PilgrimConfiguration : IEntityTypeConfiguration<Pilgrim>
             .HasForeignKey(p => p.UnitId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // TypeId stores the business Value (1=Regular,2=StandBy,3=Admin)
+        // FK references Parameter.Value via shadow property — or just drop FK
+        // and resolve in-memory using HajjConstants. This is cleaner.
         b.HasOne(p => p.Type)
             .WithMany(pa => pa.Pilgrims)
             .HasForeignKey(p => p.TypeId)
+            .HasPrincipalKey(pa => pa.Value)   // ← match on Value not PK
             .OnDelete(DeleteBehavior.Restrict);
 
         b.HasOne(p => p.Document)
@@ -25,7 +29,6 @@ public class PilgrimConfiguration : IEntityTypeConfiguration<Pilgrim>
             .HasForeignKey(p => p.DocumentId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Unique NIC per tenant per year (soft-deleted excluded)
         b.HasIndex(p => new { p.TenantId, p.NIC, p.HajjYear })
             .IsUnique()
             .HasFilter("[IsDeleted] = 0");
